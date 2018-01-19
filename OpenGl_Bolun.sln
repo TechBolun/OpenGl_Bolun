@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenGl_Bolun", "OpenGl_Bolun.vcxproj", "{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Debug|x64.ActiveCfg = Debug|x64
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Debug|x64.Build.0 = Debug|x64
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Debug|x86.ActiveCfg = Debug|Win32
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Debug|x86.Build.0 = Debug|Win32
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Release|x64.ActiveCfg = Release|x64
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Release|x64.Build.0 = Release|x64
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Release|x86.ActiveCfg = Release|Win32
+		{7FC86172-E437-4DF2-8E8C-83AFE1CA1295}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
