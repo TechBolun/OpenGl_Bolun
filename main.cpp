@@ -1,13 +1,43 @@
-﻿#include <GL/glew.h>
+﻿/*
+
+	Bolun Gao
+	
+	*/
+#include <GL/glew.h>
 #include <GL/freeglut.h>
 
 #include <iostream>
 using namespace std;
 
-void myRender(void);
+float colorR;
+float colorG;
+float colorB;
 
-void myKeyboard(unsigned char key, int x, int y);
+void myRender(void) {
 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glClearColor(colorR, colorG, colorB, 0.0f);
+
+	glutSwapBuffers();
+}
+
+void myKeyboard(unsigned char key, int x, int y) {
+	if (key == 27) {
+		exit(0);
+	}
+}
+
+void timer(int value) {
+
+	colorR = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	colorG = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	colorB = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+
+	myRender();
+	glutPostRedisplay();
+	glutTimerFunc(1000, timer, 3);
+}
 
 int main(int argc, char *argv[]) {
 
@@ -15,7 +45,6 @@ int main(int argc, char *argv[]) {
 	glewInit();
 
 	cout << "Bolun" << endl;
-	cout << glGetString(GL_VERSION) << endl;
 
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowSize(1024, 720);
@@ -25,6 +54,7 @@ int main(int argc, char *argv[]) {
 	glutCreateWindow("OpenGL Window");
 
 	glutDisplayFunc(myRender);
+	glutTimerFunc(1000, timer, 3);
 	glutKeyboardFunc(myKeyboard);
 
 	if (glewInit() != GLEW_OK) {
@@ -32,43 +62,4 @@ int main(int argc, char *argv[]) {
 	}
 
 	glutMainLoop();
-}
-
-void myKeyboard(unsigned char key, int x, int y) {
-	if (key == 27) {
-		exit(0);
-	}
-}
-
-void myRender(void) {
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	float vertex[15] = {
-		1, 0, 0,
-		-0.5, -0.5,
-		0, 1, 0,
-		0.5, -0.5,
-		0, 0, 1,
-		0.0, 0.5
-	};
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, 15 * sizeof(float), vertex, GL_STATIC_DRAW);
-
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
-
-	glEnableVertexAttribArray(0);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (const void*)12);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	//glDisableVertexAttribArray(0);
-
-	glutSwapBuffers();
 }
