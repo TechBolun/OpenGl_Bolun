@@ -19,6 +19,8 @@ GLuint fullTransform;
 GLuint LeftMouseButtonDown;
 GLuint RightMouseButtonDown;
 GLuint leftMouseX;
+GLuint oldleftMouseX;
+GLuint oldleftMouseY;
 GLuint leftMouseY;
 
 Point3f *position;
@@ -34,6 +36,10 @@ GLuint VBO;
 
 GLSLProgram shaderProgram;
 
+/*
+	set matrix4
+*/
+
 static void setTransformation() {
 
 	model.SetIdentity();
@@ -47,6 +53,10 @@ static void setTransformation() {
 	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
 }
 
+/*
+	display function
+*/
+
 static void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -54,7 +64,7 @@ static void myRender() {
 	setTransformation();
 
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glDrawArrays(GL_POINTS, 0, numVertex); // from 0, num of vertex need to draw
@@ -63,6 +73,10 @@ static void myRender() {
 
 	glutSwapBuffers();
 }
+
+/*
+	load obj file
+*/
 
 static void loadObj() {
 
@@ -84,7 +98,9 @@ static void loadObj() {
 	}
 }
 
-
+/*
+	create vertex buffer
+*/
 static void vertexBuffer() {
 
 	loadObj();
@@ -97,6 +113,9 @@ static void vertexBuffer() {
 
 }
 
+/*
+	compile shaders
+*/
 static void compileShader() {
 
 	shaderProgram.CreateProgram();
@@ -105,12 +124,13 @@ static void compileShader() {
 	glUseProgram(shaderProgram.GetID());
 
 	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
-//	assert(fullTransform != 0xFFFFFFFF);
+	assert(fullTransform != 0xFFFFFFFF);
 }
 
 static void myIdle() {
 
-	//view.SetRotationXYZ(leftMouseX*15, leftMouseY * 15, 0);
+	//view.SetRotationXYZ(leftMouseX * 10, leftMouseY * 10, 0);
+
 
 	glutPostRedisplay();
 
@@ -126,26 +146,46 @@ static void myKeyboard(unsigned char key, int x, int y) {
 	}
 }
 
+/*
+	get mouse click
+*/
 static void myMouse(int button, int state, int x, int y) {
+
 	if (button == GLUT_RIGHT_BUTTON) {
 		RightMouseButtonDown = 1;
+	}
+	else {
+		RightMouseButtonDown = 0;
 	}
 	if (button == GLUT_LEFT_BUTTON) {
 		LeftMouseButtonDown = 1;
 	}
+	else {
+		LeftMouseButtonDown = 0;
+	}
 }
+
+/*
+	tracking mouse movement
+*/
 
 static void myMouseMotion(int x, int y) {
 
 	if (RightMouseButtonDown) {
 
+		
 	}
 	if (LeftMouseButtonDown) {
+
+
 		leftMouseX = x * 0.01;
 		cout << "Mouse---xxxxxxxxxx" << leftMouseX << endl;
 		leftMouseY = y * 0.01;
-		cout << "Mouse---yyyyyyyyyy" << leftMouseX << endl;
+		cout << "Mouse---yyyyyyyyyy" << leftMouseY << endl;
+
+		
 	}
+
 }
 
 int main(int argc, char *argv[]) {
