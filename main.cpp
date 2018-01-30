@@ -1,7 +1,6 @@
 ﻿/*
-
 	Bolun Gao
-	
+
 	*/
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -12,10 +11,6 @@
 #include <iostream>
 using namespace std;
 using namespace cy;
-
-float colorR;
-float colorG;
-float colorB;
 
 GLuint numVertex;
 
@@ -32,29 +27,58 @@ Matrix4<float> MVP;
 GLuint VAO;
 GLuint VBO;
 
-/*
-	set background color
-*/
+static void setTransformation() {
+
+	model.SetIdentity();
+	view.SetView(Point3f(0.0f, 0.0f, 10.0f), Point3f(0.0f, 0.0f, 0.0f), Point3f(0.0f, 1.0f, 0.0f));
+	projection.SetPerspective((70 * 3.1415926) / 180, 1, 0.1, 100);
+
+	MVP = model * view * projection;
+
+	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
+}
+
 static void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	setTransformation();
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_POINTS, 0, numVertex); // from 0, num of vertex need to draw
 
 	glDisableVertexAttribArray(0);
 
 	glutSwapBuffers();
 }
 
+static void loadObj() {
+
+	TriMesh objFile;
+	bool loadSuccess = objFile.LoadFromFileObj("Mesh/teapot.obj");
+
+	if (!loadSuccess) {
+		cout << "load file ERROR" << endl;
+	}
+
+	numVertex = objFile.NV();
+
+	position = new Point3f[numVertex];
+
+	for (int i = 0; i < numVertex; i++) {
+		position[i].x = objFile.V(i).x;
+		position[i].y = objFile.V(i).y;
+		position[i].z = objFile.V(i).z;
+	}
+}
 
 
 static void vertexBuffer() {
+
+	loadObj();
 
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
@@ -74,40 +98,10 @@ static void compileShader() {
 	//shaderProgram.Bind();
 	glUseProgram(shaderProgram.GetID());
 
-	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
-	assert(fullTransform != 0xFFFFFFFF);
+	//fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
+	//assert(fullTransform != 0xFFFFFFFF);
 }
 
-static void setTransformation() {
-	
-	model.SetIdentity();
-	view.SetView(Point3f (0.0f, 0.0f, 10.0f), Point3f (0.0f, 0.0f, 0.0f), Point3f (0.0f, 1.0f, 0.0f));
-	projection.SetPerspective((70 * 3.1415926) / 180, 1, 0.1, 100);
-
-	MVP = model * view * projection;
-
-	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
-}
-
-static void loadObj() {
-
-	TriMesh objFile;
-	bool loadSuccess = objFile.LoadFromFileObj("Mesh\teapot.obj");
-
-	if (!loadSuccess) {
-		cout << "load file ERROR" << endl;
-	}
-
-	numVertex = objFile.NV();
-
-	position = new Point3f[numVertex];
-
-	for (int i = 0; i < numVertex; i++) {
-		position[i].x = objFile.V(i).x;
-		position[i].y = objFile.V(i).y;
-		position[i].z = objFile.V(i).z;
-	}
-}
 
 static void myKeyboard(unsigned char key, int x, int y) {
 	if (key == 27) {
@@ -121,11 +115,6 @@ static void myKeyboard(unsigned char key, int x, int y) {
 	animate background color by using glutPostRedisplay
 */
 static void myIdle() {
-
-	// random num between 0 and 1
-	colorR = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	colorG = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	colorB = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 
 	glutPostRedisplay();
 
@@ -152,13 +141,11 @@ int main(int argc, char *argv[]) {
 	glutKeyboardFunc(myKeyboard);
 	glutIdleFunc(myIdle);
 
-	loadObj();
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	vertexBuffer();
 
 	compileShader();
-
-	setTransformation();
 
 	glutMainLoop();
 }

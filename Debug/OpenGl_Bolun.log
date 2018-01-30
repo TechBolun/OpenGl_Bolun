@@ -1,21 +1,5 @@
 ﻿  main.cpp
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(70): error C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(346): note: see declaration of 'strncpy'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(304): error C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(2254): note: see declaration of 'sscanf'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(305): error C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(2254): note: see declaration of 'sscanf'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(306): error C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(2254): note: see declaration of 'sscanf'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(307): error C4996: 'sscanf': This function or variable may be unsafe. Consider using sscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(2254): note: see declaration of 'sscanf'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(265): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(507): error C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(346): note: see declaration of 'strncpy'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(512): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
-c:\users\u0828162\documents\opengl_bolun\helper functions\cytrimesh.h(553): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdio.h(205): note: see declaration of 'fopen'
-c:\users\u0828162\documents\opengl_bolun\main.cpp(84): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\u0828162\documents\opengl_bolun\main.cpp(103): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun\main.cpp(38): warning C4305: 'argument': truncation from 'double' to 'float'
+c:\users\u0828162\documents\opengl_bolun\main.cpp(75): warning C4018: '<': signed/unsigned mismatch
+  OpenGl_Bolun.vcxproj -> C:\Users\u0828162\Documents\OpenGl_Bolun\Debug\OpenGl_Bolun.exe
+  OpenGl_Bolun.vcxproj -> C:\Users\u0828162\Documents\OpenGl_Bolun\Debug\OpenGl_Bolun.pdb (Partial PDB)
