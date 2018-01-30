@@ -6,26 +6,40 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "cyMatrix.h"
+#include "cyTriMesh.h"
+#include "cyGL.h"
+#include "cyPoint.h"
 #include <iostream>
 using namespace std;
-
-const char* vertexShader = "shader.vs";
-const char* fragmentShader = "shader.fs";
+using namespace cy;
 
 float colorR;
 float colorG;
 float colorB;
 
+GLuint numVertex;
+
+GLuint fullTransform;
+
+Point3f *position;
+
+Matrix4<float> model;
+Matrix4<float> view;
+Matrix4<float> projection;
+
+Matrix4<float> MVP;
+
+GLuint VAO;
 GLuint VBO;
 
 /*
 	set background color
 */
-void myRender(void) {
+static void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glClearColor(colorR, colorG, colorB, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -38,42 +52,85 @@ void myRender(void) {
 	glutSwapBuffers();
 }
 
-static void vertexBuffer() {
-	float vertices[9] = {
-		0.5f, 0.5f, 0.5f,
-		0.5f, 0.5f, 0.5f,
-		0.5f, 0.5f, 0.5f
-	};
 
+
+static void vertexBuffer() {
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertex, position, GL_STATIC_DRAW);
+
 }
 
-void myKeyboard(unsigned char key, int x, int y) {
+static void compileShader() {
+
+	GLSLProgram shaderProgram;
+
+	shaderProgram.CreateProgram();
+	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
+
+	//shaderProgram.Bind();
+	glUseProgram(shaderProgram.GetID());
+
+	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
+	assert(fullTransform != 0xFFFFFFFF);
+}
+
+static void setTransformation() {
+	
+	model.SetIdentity();
+	view.SetView(Point3f (0.0f, 0.0f, 10.0f), Point3f (0.0f, 0.0f, 0.0f), Point3f (0.0f, 1.0f, 0.0f));
+	projection.SetPerspective((70 * 3.1415926) / 180, 1, 0.1, 100);
+
+	MVP = model * view * projection;
+
+	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
+}
+
+static void loadObj() {
+
+	TriMesh objFile;
+	bool loadSuccess = objFile.LoadFromFileObj("Mesh\teapot.obj");
+
+	if (!loadSuccess) {
+		cout << "load file ERROR" << endl;
+	}
+
+	numVertex = objFile.NV();
+
+	position = new Point3f[numVertex];
+
+	for (int i = 0; i < numVertex; i++) {
+		position[i].x = objFile.V(i).x;
+		position[i].y = objFile.V(i).y;
+		position[i].z = objFile.V(i).z;
+	}
+}
+
+static void myKeyboard(unsigned char key, int x, int y) {
 	if (key == 27) {
+		delete[] position;
 		exit(0);
 	}
+
 }
 
 /*
 	animate background color by using glutPostRedisplay
 */
-void idle(int value) {
+static void myIdle() {
 
 	// random num between 0 and 1
 	colorR = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	colorG = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	colorB = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 
-	myRender();
 	glutPostRedisplay();
-	glutTimerFunc(33, idle, 1);
-}
-
-static void initialShader(GLuint shaderProgram, const char* shaderName, GLenum shaderType) {
 
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -87,19 +144,21 @@ int main(int argc, char *argv[]) {
 
 	glutCreateWindow("OpenGL Window - Bolun Gao");
 
-	glutDisplayFunc(myRender);
-
 	if (glewInit() != GLEW_OK) {
 		cout << "ERROR - glew not included" << endl;
-	} 
+	}
 
-	glutTimerFunc(33, idle, 1);    //loop animation
-
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
+	glutDisplayFunc(myRender);
 	glutKeyboardFunc(myKeyboard);
+	glutIdleFunc(myIdle);
+
+	loadObj();
 
 	vertexBuffer();
+
+	compileShader();
+
+	setTransformation();
 
 	glutMainLoop();
 }
