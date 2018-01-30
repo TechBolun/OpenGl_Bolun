@@ -16,6 +16,11 @@ GLuint numVertex;
 
 GLuint fullTransform;
 
+GLuint LeftMouseButtonDown;
+GLuint RightMouseButtonDown;
+GLuint leftMouseX;
+GLuint leftMouseY;
+
 Point3f *position;
 
 Matrix4<float> model;
@@ -27,13 +32,17 @@ Matrix4<float> MVP;
 GLuint VAO;
 GLuint VBO;
 
+GLSLProgram shaderProgram;
+
 static void setTransformation() {
 
 	model.SetIdentity();
-	view.SetView(Point3f(0.0f, 0.0f, 10.0f), Point3f(0.0f, 0.0f, 0.0f), Point3f(0.0f, 1.0f, 0.0f));
-	projection.SetPerspective((70 * 3.1415926) / 180, 1, 0.1, 100);
+	view.SetView(Point3f(0.0f, -90.0f, 30.0f), Point3f(0.0f, 0.0f, 0.0f), Point3f(0.0f, 1.0f, 0.0f));
+	projection.SetPerspective(1, 1, 0.1, 100);
 
-	MVP = model * view * projection;
+	MVP = projection * view * model;
+
+	glUseProgram(shaderProgram.GetID());
 
 	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
 }
@@ -90,36 +99,54 @@ static void vertexBuffer() {
 
 static void compileShader() {
 
-	GLSLProgram shaderProgram;
-
 	shaderProgram.CreateProgram();
 	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
 
-	//shaderProgram.Bind();
 	glUseProgram(shaderProgram.GetID());
 
-	//fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
-	//assert(fullTransform != 0xFFFFFFFF);
+	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
+//	assert(fullTransform != 0xFFFFFFFF);
 }
 
-
-static void myKeyboard(unsigned char key, int x, int y) {
-	if (key == 27) {
-		delete[] position;
-		exit(0);
-	}
-
-}
-
-/*
-	animate background color by using glutPostRedisplay
-*/
 static void myIdle() {
+
+	//view.SetRotationXYZ(leftMouseX*15, leftMouseY * 15, 0);
 
 	glutPostRedisplay();
 
 }
 
+/*
+	keyboard input
+*/
+static void myKeyboard(unsigned char key, int x, int y) {
+	if (key == 27) {
+		delete[] position;
+		exit(0);
+	}
+}
+
+static void myMouse(int button, int state, int x, int y) {
+	if (button == GLUT_RIGHT_BUTTON) {
+		RightMouseButtonDown = 1;
+	}
+	if (button == GLUT_LEFT_BUTTON) {
+		LeftMouseButtonDown = 1;
+	}
+}
+
+static void myMouseMotion(int x, int y) {
+
+	if (RightMouseButtonDown) {
+
+	}
+	if (LeftMouseButtonDown) {
+		leftMouseX = x * 0.01;
+		cout << "Mouse---xxxxxxxxxx" << leftMouseX << endl;
+		leftMouseY = y * 0.01;
+		cout << "Mouse---yyyyyyyyyy" << leftMouseX << endl;
+	}
+}
 
 int main(int argc, char *argv[]) {
 
@@ -138,8 +165,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	glutDisplayFunc(myRender);
-	glutKeyboardFunc(myKeyboard);
 	glutIdleFunc(myIdle);
+
+	glutKeyboardFunc(myKeyboard);
+	glutMouseFunc(myMouse);
+	glutMotionFunc(myMouseMotion);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 

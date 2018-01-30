@@ -1,5 +1,7 @@
 ﻿  main.cpp
-c:\users\u0828162\documents\opengl_bolun\main.cpp(38): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\u0828162\documents\opengl_bolun\main.cpp(75): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun\main.cpp(41): warning C4305: 'argument': truncation from 'double' to 'float'
+c:\users\u0828162\documents\opengl_bolun\main.cpp(80): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun\main.cpp(144): warning C4244: '=': conversion from 'double' to 'GLuint', possible loss of data
+c:\users\u0828162\documents\opengl_bolun\main.cpp(146): warning C4244: '=': conversion from 'double' to 'GLuint', possible loss of data
   OpenGl_Bolun.vcxproj -> C:\Users\u0828162\Documents\OpenGl_Bolun\Debug\OpenGl_Bolun.exe
   OpenGl_Bolun.vcxproj -> C:\Users\u0828162\Documents\OpenGl_Bolun\Debug\OpenGl_Bolun.pdb (Partial PDB)
