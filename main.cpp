@@ -18,10 +18,11 @@ GLuint fullTransform;
 
 GLuint LeftMouseButtonDown;
 GLuint RightMouseButtonDown;
-GLuint leftMouseX;
-GLuint oldleftMouseX;
-GLuint oldleftMouseY;
-GLuint leftMouseY;
+
+float leftMouseX = 0.0f;
+int preLeftMouseX;
+int preLeftMouseY;
+float leftMouseY;
 
 Point3f *position;
 
@@ -30,6 +31,8 @@ Matrix4<float> view;
 Matrix4<float> projection;
 
 Matrix4<float> MVP;
+
+Matrix4<float> temp;
 
 GLuint VAO;
 GLuint VBO;
@@ -42,15 +45,11 @@ GLSLProgram shaderProgram;
 
 static void setTransformation() {
 
-	model.SetIdentity();
+
 	view.SetView(Point3f(0.0f, -90.0f, 30.0f), Point3f(0.0f, 0.0f, 0.0f), Point3f(0.0f, 1.0f, 0.0f));
-	projection.SetPerspective(1, 1, 0.1, 100);
+	projection.SetPerspective(1, 1, 0.1, 200);
 
 	MVP = projection * view * model;
-
-	glUseProgram(shaderProgram.GetID());
-
-	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
 }
 
 /*
@@ -61,7 +60,12 @@ static void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	setTransformation();
+
+	glUseProgram(shaderProgram.GetID());
+
+	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
+
+//	setTransformation();
 
 	glEnableVertexAttribArray(0);
 	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -86,6 +90,12 @@ static void loadObj() {
 	if (!loadSuccess) {
 		cout << "load file ERROR" << endl;
 	}
+
+	model.SetIdentity();
+
+	objFile.ComputeBoundingBox();
+
+	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
 
 	numVertex = objFile.NV();
 
@@ -129,8 +139,22 @@ static void compileShader() {
 
 static void myIdle() {
 
-	//view.SetRotationXYZ(leftMouseX * 10, leftMouseY * 10, 0);
+	if (LeftMouseButtonDown) {
 
+		view *= Matrix4<float>::MatrixRotationX(leftMouseX);
+
+		view *= Matrix4<float>::MatrixRotationY(leftMouseY);
+
+	}
+
+	if (RightMouseButtonDown) {
+
+		view.AddTrans(Point3f(0.0f, 0.0f, leftMouseY * 2)) ;
+		//view += temp;
+	}
+
+
+	MVP = projection * view * model;
 
 	glutPostRedisplay();
 
@@ -151,13 +175,13 @@ static void myKeyboard(unsigned char key, int x, int y) {
 */
 static void myMouse(int button, int state, int x, int y) {
 
-	if (button == GLUT_RIGHT_BUTTON) {
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
 		RightMouseButtonDown = 1;
 	}
 	else {
 		RightMouseButtonDown = 0;
 	}
-	if (button == GLUT_LEFT_BUTTON) {
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 		LeftMouseButtonDown = 1;
 	}
 	else {
@@ -173,18 +197,27 @@ static void myMouseMotion(int x, int y) {
 
 	if (RightMouseButtonDown) {
 
-		
+		leftMouseY = (preLeftMouseY - y);
 	}
-	if (LeftMouseButtonDown) {
 
 
-		leftMouseX = x * 0.01;
-		cout << "Mouse---xxxxxxxxxx" << leftMouseX << endl;
-		leftMouseY = y * 0.01;
-		cout << "Mouse---yyyyyyyyyy" << leftMouseY << endl;
 
-		
+	if (LeftMouseButtonDown) 
+	{
+		leftMouseX = 0.05f * (preLeftMouseX - x);
+		leftMouseY = 0.05f * (preLeftMouseY - y);
 	}
+
+
+	
+
+	////leftMouseX = x * 0.01;
+	cout << "Mouse---xxxxxxxxxx" << leftMouseX  << endl;
+	////leftMouseY = y * 0.01;
+	cout << "Mouse---yyyyyyyyyy" << leftMouseY << endl;
+
+	preLeftMouseX = x;
+	preLeftMouseY = y;
 
 }
 
@@ -216,6 +249,11 @@ int main(int argc, char *argv[]) {
 	vertexBuffer();
 
 	compileShader();
+
+	setTransformation();
+
+
+
 
 	glutMainLoop();
 }
