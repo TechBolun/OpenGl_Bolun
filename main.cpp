@@ -12,7 +12,9 @@
 using namespace std;
 using namespace cy;
 
-GLuint numVertex;
+GLuint numVertices;
+GLuint numFaces;
+GLuint numIndices;
 
 GLuint fullTransform;
 
@@ -23,8 +25,11 @@ float leftMouseX = 0.0f;
 int preLeftMouseX;
 int preLeftMouseY;
 float leftMouseY;
+float rightMouseX;
+int preRightMouseX;
 
 Point3f *position;
+unsigned int *indices;
 
 Matrix4<float> model;
 Matrix4<float> view;
@@ -35,9 +40,12 @@ Matrix4<float> MVP;
 Matrix4<float> temp;
 
 GLuint VAO;
-GLuint VBO;
+GLuint VBO;	// vertices
+GLuint EAO; // indeice 
 
 GLSLProgram shaderProgram;
+
+TriMesh objFile;
 
 /*
 	set matrix4
@@ -60,18 +68,17 @@ static void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 	glUseProgram(shaderProgram.GetID());
 
 	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
 
-//	setTransformation();
-
 	glEnableVertexAttribArray(0);
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glDrawArrays(GL_POINTS, 0, numVertex); // from 0, num of vertex need to draw
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
+
+	//glDrawArrays(GL_POINTS, 0, numVertices); // from 0, num of vertex need to draw
+	glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
 
 	glDisableVertexAttribArray(0);
 
@@ -84,7 +91,6 @@ static void myRender() {
 
 static void loadObj() {
 
-	TriMesh objFile;
 	bool loadSuccess = objFile.LoadFromFileObj("Mesh/teapot.obj");
 
 	if (!loadSuccess) {
@@ -97,15 +103,36 @@ static void loadObj() {
 
 	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
 
-	numVertex = objFile.NV();
+	numVertices = objFile.NV();
 
-	position = new Point3f[numVertex];
+	position = new Point3f[numVertices];
 
-	for (int i = 0; i < numVertex; i++) {
+	for (int i = 0; i < numVertices; i++) {
 		position[i].x = objFile.V(i).x;
 		position[i].y = objFile.V(i).y;
 		position[i].z = objFile.V(i).z;
 	}
+
+	numFaces = objFile.NF();
+
+	numIndices = numFaces * 3;
+
+	indices = new unsigned int[numIndices];
+
+	for (int i = 0; i < numFaces; i ++) {
+
+		indices[3 * i] = objFile.F(i).v[0];
+		indices[3 * i + 1] = objFile.F(i).v[1];
+		indices[3 * i + 2] = objFile.F(i).v[2];
+
+	}
+}
+
+static void indexBuffer() {
+
+	glGenBuffers(1, &EAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * numIndices, indices, GL_STATIC_DRAW);
 }
 
 /*
@@ -119,7 +146,9 @@ static void vertexBuffer() {
 	glBindVertexArray(VAO);
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertex, position, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertices, position, GL_STATIC_DRAW);
+
+	indexBuffer();
 
 }
 
@@ -149,8 +178,7 @@ static void myIdle() {
 
 	if (RightMouseButtonDown) {
 
-		view.AddTrans(Point3f(0.0f, 0.0f, leftMouseY * 2)) ;
-		//view += temp;
+		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseX)) ;
 	}
 
 
@@ -164,8 +192,11 @@ static void myIdle() {
 	keyboard input
 */
 static void myKeyboard(unsigned char key, int x, int y) {
-	if (key == 27) {
+
+	switch (key) {
+	case 27:
 		delete[] position;
+		delete[] indices;
 		exit(0);
 	}
 }
@@ -197,27 +228,26 @@ static void myMouseMotion(int x, int y) {
 
 	if (RightMouseButtonDown) {
 
-		leftMouseY = (preLeftMouseY - y);
+		rightMouseX = 0.5f * (preRightMouseX - x);
+
+		preRightMouseX = x;
 	}
-
-
 
 	if (LeftMouseButtonDown) 
 	{
 		leftMouseX = 0.05f * (preLeftMouseX - x);
 		leftMouseY = 0.05f * (preLeftMouseY - y);
+
+		preLeftMouseX = x;
+		preLeftMouseY = y;
 	}
 
 
 	
-
-	////leftMouseX = x * 0.01;
 	cout << "Mouse---xxxxxxxxxx" << leftMouseX  << endl;
-	////leftMouseY = y * 0.01;
 	cout << "Mouse---yyyyyyyyyy" << leftMouseY << endl;
 
-	preLeftMouseX = x;
-	preLeftMouseY = y;
+
 
 }
 
@@ -244,16 +274,13 @@ int main(int argc, char *argv[]) {
 	glutMouseFunc(myMouse);
 	glutMotionFunc(myMouseMotion);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	vertexBuffer();
 
 	compileShader();
 
 	setTransformation();
-
-
-
 
 	glutMainLoop();
 }
