@@ -15,6 +15,7 @@ using namespace cy;
 GLuint numVertices;
 GLuint numFaces;
 GLuint numIndices;
+GLuint numVertexNormal;
 
 GLuint fullTransform;
 
@@ -29,6 +30,7 @@ float rightMouseX;
 int preRightMouseX;
 
 Point3f *position;
+Point3f *normal;
 unsigned int *indices;
 
 Matrix4<float> model;
@@ -103,7 +105,13 @@ static void loadObj() {
 
 	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
 
-	numVertices = objFile.NV();
+	numVertices = objFile.NV(); // get vertices
+	cout << numVertices << endl;
+	numVertexNormal = objFile.NVN(); //get vertex normal
+	cout << numVertexNormal << endl;
+
+
+	//store vertices to position buffer
 
 	position = new Point3f[numVertices];
 
@@ -112,6 +120,18 @@ static void loadObj() {
 		position[i].y = objFile.V(i).y;
 		position[i].z = objFile.V(i).z;
 	}
+
+	// store vertex normal to normal buffer
+
+	normal = new Point3f[numVertexNormal];
+
+	for (int i = 0; i < numVertexNormal; i++) {
+		normal[i].x = objFile.VN(i).x;
+		normal[i].y = objFile.VN(i).y;
+		normal[i].z = objFile.VN(i).z;
+	}
+
+	// store face vertices to indices buffer
 
 	numFaces = objFile.NF();
 
@@ -124,7 +144,6 @@ static void loadObj() {
 		indices[3 * i] = objFile.F(i).v[0];
 		indices[3 * i + 1] = objFile.F(i).v[1];
 		indices[3 * i + 2] = objFile.F(i).v[2];
-
 	}
 }
 
