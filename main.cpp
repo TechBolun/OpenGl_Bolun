@@ -15,9 +15,11 @@ using namespace cy;
 GLuint numVertices;
 GLuint numFaces;
 GLuint numIndices;
+GLuint numNormalFaces;
 GLuint numVertexNormal;
 
 GLuint fullTransform;
+GLuint modelToViewTransform;
 
 GLuint LeftMouseButtonDown;
 GLuint RightMouseButtonDown;
@@ -38,11 +40,12 @@ Matrix4<float> view;
 Matrix4<float> projection;
 
 Matrix4<float> MVP;
-
+Matrix4f MV;;
 Matrix4<float> temp;
 
 GLuint VAO;
 GLuint VBO;	// vertices
+GLuint VNBO;	// vertices
 GLuint EAO; // indeice 
 
 GLSLProgram shaderProgram;
@@ -57,9 +60,13 @@ static void setTransformation() {
 
 
 	view.SetView(Point3f(0.0f, -90.0f, 30.0f), Point3f(0.0f, 0.0f, 0.0f), Point3f(0.0f, 1.0f, 0.0f));
-	projection.SetPerspective(1, 1, 0.1, 200);
+	projection.SetPerspective(1, 1, 0.1, 300);
 
 	MVP = projection * view * model;
+
+	MV = view * model;
+	MV.Invert();
+	MV.Transpose();
 }
 
 /*
@@ -72,17 +79,25 @@ static void myRender() {
 
 	glUseProgram(shaderProgram.GetID());
 
+
+
 	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
+	glUniformMatrix4fv(modelToViewTransform, 1, GL_FALSE, &MV.data[0]);
 
 	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, VNBO);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	//glDrawArrays(GL_POINTS, 0, numVertices); // from 0, num of vertex need to draw
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
+
 	glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
 
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 
 	glutSwapBuffers();
 }
@@ -107,9 +122,9 @@ static void loadObj() {
 
 	numVertices = objFile.NV(); // get vertices
 	cout << numVertices << endl;
+
 	numVertexNormal = objFile.NVN(); //get vertex normal
 	cout << numVertexNormal << endl;
-
 
 	//store vertices to position buffer
 
@@ -163,13 +178,23 @@ static void vertexBuffer() {
 
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
+
+	// vertex buffer
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertices, position, GL_STATIC_DRAW);
 
+	//vertex normal
+	glGenBuffers(1, &VNBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VNBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertexNormal, normal, GL_STATIC_DRAW);
+
 	indexBuffer();
 
 }
+
+
+
 
 /*
 	compile shaders
@@ -182,6 +207,8 @@ static void compileShader() {
 	glUseProgram(shaderProgram.GetID());
 
 	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
+	modelToViewTransform = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
+
 	assert(fullTransform != 0xFFFFFFFF);
 }
 
@@ -215,6 +242,7 @@ static void myKeyboard(unsigned char key, int x, int y) {
 	switch (key) {
 	case 27:
 		delete[] position;
+		delete[] normal;
 		delete[] indices;
 		exit(0);
 	}
@@ -259,14 +287,11 @@ static void myMouseMotion(int x, int y) {
 
 		preLeftMouseX = x;
 		preLeftMouseY = y;
+		//preRightMouseX = x;
 	}
-
-
 	
-	cout << "Mouse---xxxxxxxxxx" << leftMouseX  << endl;
-	cout << "Mouse---yyyyyyyyyy" << leftMouseY << endl;
-
-
+	cout << "Mouse---xxxxxxxxxx" << rightMouseX << endl;
+	cout << "PRE---yyyyyyyyyy" << preRightMouseX << endl;
 
 }
 
@@ -286,14 +311,15 @@ int main(int argc, char *argv[]) {
 		cout << "ERROR - glew not included" << endl;
 	}
 
+	glEnable(GL_DEPTH_TEST);
+
+	
 	glutDisplayFunc(myRender);
 	glutIdleFunc(myIdle);
 
 	glutKeyboardFunc(myKeyboard);
 	glutMouseFunc(myMouse);
 	glutMotionFunc(myMouseMotion);
-
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	vertexBuffer();
 
