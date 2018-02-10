@@ -20,16 +20,26 @@ GLuint numVertexNormal;
 
 GLuint fullTransform;
 GLuint modelToViewTransform;
+GLuint modelToWorldTransform;
+GLuint ambientLightUniformLocation;
+GLuint lightPositionUniformLocation;
+GLuint cameraPositionUniformLocation;
 
-GLuint LeftMouseButtonDown;
-GLuint RightMouseButtonDown;
+GLuint diffuseColorID;
+GLuint specularColorID;
 
-float leftMouseX = 0.0f;
+bool LeftMouseButtonDown;
+bool RightMouseButtonDown;
+bool controlButtonDown;
+
+float leftMouseRotationX;
+float leftMouseRotationY;
 int preLeftMouseX;
 int preLeftMouseY;
-float leftMouseY;
-float rightMouseX;
+float rightMouseScale;
+float rightMouseY;
 int preRightMouseX;
+int preRightMouseY;
 
 Point3f *position;
 Point3f *normal;
@@ -52,21 +62,55 @@ GLSLProgram shaderProgram;
 
 TriMesh objFile;
 
+Point3f cameraPosition = Point3f(0.0f, -90.0f, 30.0f);
+Point3f targetPosition = Point3f(0.0f, 0.0f, 0.0f);
+
+Point3f initialLightPosition = Point3f(0.0f, 0.0f, 10.0f);
+Point3f lightPosition = initialLightPosition;
+
+Point3f diffuseColor = Point3f(1.0f, 0.0f, 1.0f);
+Point3f specularColor = Point3f(0.0f, 1.0f, 1.0f);
+Point3f ambientLight = Point3f(0.2f, 0.2f, 0.2f);
+
+
 /*
-	set matrix4
+	set model to projection transformation matrix4
 */
+static void fullTransformation() {
 
-static void setTransformation() {
 
-
-	view.SetView(Point3f(0.0f, -90.0f, 30.0f), Point3f(0.0f, 0.0f, 0.0f), Point3f(0.0f, 1.0f, 0.0f));
+	view.SetView(cameraPosition, targetPosition, Point3f(0.0f, 1.0f, 0.0f));
 	projection.SetPerspective(1, 1, 0.1, 300);
 
 	MVP = projection * view * model;
+}
+
+/*
+	set model to view transformation matrix4
+*/
+void modelToViewTransformation() {
 
 	MV = view * model;
 	MV.Invert();
 	MV.Transpose();
+}
+
+/*
+	set light tranformation 
+*/
+void lightTransformation() {
+	lightPosition = Point3f();
+	//lightPosition = Matrix3f::MatrixRotationX()
+}
+
+void BlinnShading() {
+
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+	glUniform3fv(cameraPositionUniformLocation, 1, &cameraPosition[0]);
+	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
+
+	glUniform3fv(diffuseColorID, 1, &diffuseColor[0]);
+	glUniform3fv(specularColorID, 1, &specularColor[0]);
 }
 
 /*
@@ -79,10 +123,11 @@ static void myRender() {
 
 	glUseProgram(shaderProgram.GetID());
 
-
-
 	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
 	glUniformMatrix4fv(modelToViewTransform, 1, GL_FALSE, &MV.data[0]);
+	glUniformMatrix4fv(modelToWorldTransform, 1, GL_FALSE, &model.data[0]);
+
+	BlinnShading();
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -190,7 +235,6 @@ static void vertexBuffer() {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertexNormal, normal, GL_STATIC_DRAW);
 
 	indexBuffer();
-
 }
 
 
@@ -208,6 +252,14 @@ static void compileShader() {
 
 	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
 	modelToViewTransform = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
+	modelToWorldTransform = glGetUniformLocation(shaderProgram.GetID(), "MW_tranform");
+
+	ambientLightUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "ambientColor_Bolun");
+	lightPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "lightPosition_Bolun");
+	cameraPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "cameraPosition_Bolun");
+
+	diffuseColorID = glGetUniformLocation(shaderProgram.GetID(), "diffuseColor_Bolun");
+	specularColorID = glGetUniformLocation(shaderProgram.GetID(), "specularColor_Bolun");
 
 	assert(fullTransform != 0xFFFFFFFF);
 }
@@ -216,17 +268,14 @@ static void myIdle() {
 
 	if (LeftMouseButtonDown) {
 
-		view *= Matrix4<float>::MatrixRotationX(leftMouseX);
+		view *= Matrix4<float>::MatrixRotationX(leftMouseRotationX);
 
-		view *= Matrix4<float>::MatrixRotationY(leftMouseY);
-
+		view *= Matrix4<float>::MatrixRotationY(leftMouseRotationY);
 	}
-
 	if (RightMouseButtonDown) {
 
-		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseX)) ;
+		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale)) ;
 	}
-
 
 	MVP = projection * view * model;
 
@@ -237,7 +286,7 @@ static void myIdle() {
 /*
 	keyboard input
 */
-static void myKeyboard(unsigned char key, int x, int y) {
+void myKeyboard(unsigned char key, int x, int y) {
 
 	switch (key) {
 	case 27:
@@ -245,7 +294,32 @@ static void myKeyboard(unsigned char key, int x, int y) {
 		delete[] normal;
 		delete[] indices;
 		exit(0);
+
 	}
+}
+
+void functionKeyDown(GLint key, GLint x, GLint y) {
+
+	switch (key)
+	{
+		case 0x72:
+			controlButtonDown = true;
+		case 0x73:
+			controlButtonDown = true;
+	}
+
+}
+
+void functionKeyUp(GLint key, GLint x, GLint y) {
+
+	switch (key)
+	{
+	case 0x72:
+		controlButtonDown = false;
+	case 0x73:
+		controlButtonDown = false;
+	}
+
 }
 
 /*
@@ -254,17 +328,23 @@ static void myKeyboard(unsigned char key, int x, int y) {
 static void myMouse(int button, int state, int x, int y) {
 
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
-		RightMouseButtonDown = 1;
+		RightMouseButtonDown = true;
 	}
 	else {
-		RightMouseButtonDown = 0;
+		RightMouseButtonDown = false;
 	}
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		LeftMouseButtonDown = 1;
+		LeftMouseButtonDown = true;
 	}
 	else {
-		LeftMouseButtonDown = 0;
+		LeftMouseButtonDown = false;
 	}
+
+	preRightMouseX = x;
+	preRightMouseY = y;
+
+	preLeftMouseX = x;
+	preLeftMouseY = y;
 }
 
 /*
@@ -275,23 +355,36 @@ static void myMouseMotion(int x, int y) {
 
 	if (RightMouseButtonDown) {
 
-		rightMouseX = 0.5f * (preRightMouseX - x);
+		if (!controlButtonDown) {
 
-		preRightMouseX = x;
+			rightMouseScale = 0.5f * (preRightMouseX - x);
+			rightMouseScale = 0.5f * (preRightMouseY - y);
+
+			preRightMouseX = x;
+			preRightMouseY = y;
+		}
+		else {
+
+		}
 	}
 
-	if (LeftMouseButtonDown) 
-	{
-		leftMouseX = 0.05f * (preLeftMouseX - x);
-		leftMouseY = 0.05f * (preLeftMouseY - y);
+	if (LeftMouseButtonDown) {
 
-		preLeftMouseX = x;
-		preLeftMouseY = y;
-		//preRightMouseX = x;
+		if (!controlButtonDown) {
+
+			leftMouseRotationX = 0.02f * (preLeftMouseX - x);
+			leftMouseRotationY = 0.02f * (preLeftMouseY - y);
+
+			preLeftMouseX = x;
+			preLeftMouseY = y;
+		}
+		else {
+
+		}
 	}
 	
-	cout << "Mouse---xxxxxxxxxx" << rightMouseX << endl;
-	cout << "PRE---yyyyyyyyyy" << preRightMouseX << endl;
+	//cout << "Mouse---xxxxxxxxxx" << mouseScale << endl;
+	//cout << "PRE---yyyyyyyyyy" << preRightMouseX << endl;
 
 }
 
@@ -318,6 +411,8 @@ int main(int argc, char *argv[]) {
 	glutIdleFunc(myIdle);
 
 	glutKeyboardFunc(myKeyboard);
+	glutSpecialFunc(functionKeyDown);
+	//glutSpecialFunc(functionKeyUp);
 	glutMouseFunc(myMouse);
 	glutMotionFunc(myMouseMotion);
 
@@ -325,7 +420,8 @@ int main(int argc, char *argv[]) {
 
 	compileShader();
 
-	setTransformation();
+	fullTransformation();
+	modelToViewTransformation();
 
 	glutMainLoop();
 }
