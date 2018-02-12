@@ -1,7 +1,8 @@
 ﻿  main.cpp
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(83): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(178): warning C4018: '<': signed/unsigned mismatch
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(188): warning C4018: '<': signed/unsigned mismatch
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(202): warning C4018: '<': signed/unsigned mismatch
-  OpenGl_Bolun.vcxproj -> C:\Users\Bolun\Documents\GitHub\OpenGl_Bolun\Debug\OpenGl_Bolun.exe
-  OpenGl_Bolun.vcxproj -> C:\Users\Bolun\Documents\GitHub\OpenGl_Bolun\Debug\OpenGl_Bolun.pdb (Partial PDB)
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(14): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(97): warning C4305: 'argument': truncation from 'double' to 'float'
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(203): warning C4018: '<': signed/unsigned mismatch
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(213): warning C4018: '<': signed/unsigned mismatch
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(227): warning C4018: '<': signed/unsigned mismatch
+main.obj : error LNK2019: unresolved external symbol "unsigned int __cdecl lodepng::decode(class std::vector<unsigned char,class std::allocator<unsigned char> > &,unsigned int &,unsigned int &,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,enum LodePNGColorType,unsigned int)" (?decode@lodepng@@YAIAAV?$vector@EV?$allocator@E@std@@@std@@AAI1ABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@3@W4LodePNGColorType@@I@Z) referenced in function "void __cdecl loadObj(void)" (?loadObj@@YAXXZ)
+C:\Users\Bolun\Documents\GitHub\OpenGl_Bolun\Debug\OpenGl_Bolun.exe : fatal error LNK1120: 1 unresolved externals

@@ -4,13 +4,18 @@
 	*/
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <lodepng\lodepng.h>
+#include <stdio.h>
 #include "cyMatrix.h"
 #include "cyTriMesh.h"
 #include "cyGL.h"
 #include "cyPoint.h"
 #include <iostream>
+#include <vector>;
+#include <string>
 using namespace std;
 using namespace cy;
+using namespace lodepng;
 
 GLuint numVertices;
 GLuint numFaces;
@@ -41,6 +46,10 @@ float rightMouseY;
 int preRightMouseX;
 int preRightMouseY;
 
+unsigned width, height;
+vector<unsigned char> texture;
+unsigned int convertPNG;
+
 Point3f *position;
 Point3f *normal;
 unsigned int *indices;
@@ -60,6 +69,8 @@ GLuint EAO; // indeice
 
 GLSLProgram shaderProgram;
 
+TriMesh::Mtl mat;
+
 TriMesh objFile;
 
 Point3f cameraPosition = Point3f(0.0f, -90.0f, 30.0f);
@@ -71,6 +82,9 @@ Point3f lightPosition = initialLightPosition;
 Point3f diffuseColor = Point3f(1.0f, 0.0f, 1.0f);
 Point3f specularColor = Point3f(0.0f, 1.0f, 1.0f);
 Point3f ambientLight = Point3f(0.2f, 0.2f, 0.2f);
+
+GLuint diffuse_ID;
+GLuint specular_ID;
 
 
 /*
@@ -113,11 +127,22 @@ void BlinnShading() {
 	glUniform3fv(specularColorID, 1, &specularColor[0]);
 }
 
+void initialTexture() {
+
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &diffuse_ID);
+	glBindTexture(GL_TEXTURE_2D, diffuse_ID);
+
+	glActiveTexture(GL_TEXTURE1);
+	glGenTextures(1, &specular_ID);
+	glBindTexture(GL_TEXTURE_2D, specular_ID);
+}
+
 /*
 	display function
 */
 
-static void myRender() {
+void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -151,7 +176,7 @@ static void myRender() {
 	load obj file
 */
 
-static void loadObj() {
+void loadObj() {
 
 	bool loadSuccess = objFile.LoadFromFileObj("Mesh/teapot.obj");
 
@@ -205,9 +230,36 @@ static void loadObj() {
 		indices[3 * i + 1] = objFile.F(i).v[1];
 		indices[3 * i + 2] = objFile.F(i).v[2];
 	}
+
+	mat = objFile.M(0); //get first material
+
+	
+
+		// store diffuse to texture
+
+		convertPNG = decode(texture, width, height, mat.map_Kd.data, LodePNGColorType::LCT_RGB); //Converts PNG file from disk to raw pixel data in memory.
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data());
+	
+
+	
+		// store specular to texture
+
+		convertPNG = decode(texture, width, height, mat.map_Ks.data, LodePNGColorType::LCT_RGB); //Converts PNG file from disk to raw pixel data in memory.
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data());
+	
+
+	
 }
 
-static void indexBuffer() {
+void indexBuffer() {
 
 	glGenBuffers(1, &EAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
@@ -217,7 +269,7 @@ static void indexBuffer() {
 /*
 	create vertex buffer
 */
-static void vertexBuffer() {
+void vertexBuffer() {
 
 	loadObj();
 
@@ -238,12 +290,10 @@ static void vertexBuffer() {
 }
 
 
-
-
 /*
 	compile shaders
 */
-static void compileShader() {
+void compileShader() {
 
 	shaderProgram.CreateProgram();
 	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
@@ -264,7 +314,7 @@ static void compileShader() {
 	assert(fullTransform != 0xFFFFFFFF);
 }
 
-static void myIdle() {
+void myIdle() {
 
 	if (LeftMouseButtonDown) {
 
@@ -405,6 +455,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
 
 	
 	glutDisplayFunc(myRender);
