@@ -4,7 +4,7 @@
 	*/
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <lodepng\lodepng.h>
+#include "lodepng.h"
 #include <stdio.h>
 #include "cyMatrix.h"
 #include "cyTriMesh.h"
