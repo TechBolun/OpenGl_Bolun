@@ -1,7 +1,7 @@
 ﻿/*
-Bolun Gao
+	Bolun Gao
 
-*/
+	*/
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "lodepng/lodepng.h"
@@ -10,6 +10,7 @@ Bolun Gao
 #include "cyCodeBase/cyGL.h"
 #include "cyCodeBase/cyPoint.h"
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <stdio.h>
@@ -23,6 +24,7 @@ GLuint numFaces;
 GLuint numIndices;
 GLuint numNormalFaces;
 GLuint numVertexNormal;
+GLuint numUVindices;
 
 GLuint fullTransform;
 GLuint modelToViewTransform;
@@ -57,6 +59,7 @@ Point3f *position;
 Point3f *normal;
 Point2f *uv;
 unsigned int *indices;
+unsigned int *UVindices;
 
 Matrix4<float> model;
 Matrix4<float> view;
@@ -90,7 +93,7 @@ Point3f ambientLight = Point3f(0.2f, 0.2f, 0.2f);
 
 
 /*
-set model to projection transformation matrix4
+	set model to projection transformation matrix4
 */
 static void fullTransformation() {
 
@@ -102,7 +105,7 @@ static void fullTransformation() {
 }
 
 /*
-set model to view transformation matrix4
+	set model to view transformation matrix4
 */
 void modelToViewTransformation() {
 
@@ -112,7 +115,7 @@ void modelToViewTransformation() {
 }
 
 /*
-set light tranformation
+	set light tranformation 
 */
 void lightTransformation() {
 	lightPosition = Point3f();
@@ -143,7 +146,7 @@ void initialTexture() {
 }
 
 /*
-display function
+	display function
 */
 
 void myRender() {
@@ -168,7 +171,7 @@ void myRender() {
 
 	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, UVBO);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
 
@@ -178,12 +181,13 @@ void myRender() {
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
 
 	glutSwapBuffers();
 }
 
 /*
-load obj file
+	load obj file
 */
 
 void loadObj() {
@@ -235,9 +239,25 @@ void loadObj() {
 
 	indices = new unsigned int[numIndices];
 
-	uv = new Point2f[numIndices];
 
-	for (int i = 0; i < numFaces; i++) {
+	
+
+	numUVindices = objFile.NVT();
+
+	cout << numUVindices << endl;
+
+	uv = new Point2f[numIndices];
+	UVindices = new unsigned int[numUVindices];
+
+	for (int i = 0; i < numUVindices; i++) {
+		uv[i].x = objFile.V(i).x;
+		uv[i].y = objFile.V(i).y;
+	}
+
+
+
+
+	for (int i = 0; i < numFaces; i ++) {
 
 		indices[3 * i] = objFile.F(i).v[0];
 		indices[3 * i + 1] = objFile.F(i).v[1];
@@ -249,13 +269,16 @@ void loadObj() {
 		uv[3 * i] = Point2f(objFile.VT(texFace.v[0]));
 		uv[3 * i + 1] = Point2f(objFile.VT(texFace.v[1]));
 		uv[3 * i + 2] = Point2f(objFile.VT(texFace.v[2]));
+
 	}
 
+	for (int i = 0; i < numFaces; i++) {
 
+	}
 
 	mat = objFile.M(0); //get first material
 
-
+	
 	{
 
 		unsigned width, height;
@@ -263,7 +286,7 @@ void loadObj() {
 
 		// store diffuse to texture
 
-		convertPNG = decode(texture, width, height, mat.map_Kd.data, LCT_RGB); //Converts PNG file from disk to raw pixel data in memory.
+		convertPNG = decode(texture, width, height, mat.map_Kd.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
 
 		glActiveTexture(GL_TEXTURE0);
 		glGenTextures(1, &diffuse_ID);
@@ -282,7 +305,7 @@ void loadObj() {
 
 		// store specular to texture
 
-		convertPNG = decode(texture, width, height, mat.map_Ks.data, LCT_RGB); //Converts PNG file from disk to raw pixel data in memory.
+		convertPNG = decode(texture, width, height, mat.map_Ks.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
 
 		glActiveTexture(GL_TEXTURE1);
 		glGenTextures(1, &specular_ID);
@@ -296,7 +319,7 @@ void loadObj() {
 
 
 
-
+	
 }
 
 void indexBuffer() {
@@ -307,7 +330,7 @@ void indexBuffer() {
 }
 
 /*
-create vertex buffer
+	create vertex buffer
 */
 void vertexBuffer() {
 
@@ -336,7 +359,7 @@ void vertexBuffer() {
 
 
 /*
-compile shaders
+	compile shaders
 */
 void compileShader() {
 
@@ -369,7 +392,7 @@ void myIdle() {
 	}
 	if (RightMouseButtonDown) {
 
-		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale));
+		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale)) ;
 	}
 
 	MVP = projection * view * model;
@@ -379,7 +402,7 @@ void myIdle() {
 }
 
 /*
-keyboard input
+	keyboard input
 */
 void myKeyboard(unsigned char key, int x, int y) {
 
@@ -389,6 +412,7 @@ void myKeyboard(unsigned char key, int x, int y) {
 		delete[] normal;
 		delete[] indices;
 		delete[] uv;
+		delete[] UVindices;
 		exit(0);
 
 	}
@@ -398,10 +422,10 @@ void functionKeyDown(GLint key, GLint x, GLint y) {
 
 	switch (key)
 	{
-	case 0x72:
-		controlButtonDown = true;
-	case 0x73:
-		controlButtonDown = true;
+		case 0x72:
+			controlButtonDown = true;
+		case 0x73:
+			controlButtonDown = true;
 	}
 
 }
@@ -419,7 +443,7 @@ void functionKeyUp(GLint key, GLint x, GLint y) {
 }
 
 /*
-get mouse click
+	get mouse click
 */
 static void myMouse(int button, int state, int x, int y) {
 
@@ -444,7 +468,7 @@ static void myMouse(int button, int state, int x, int y) {
 }
 
 /*
-tracking mouse movement
+	tracking mouse movement
 */
 
 static void myMouseMotion(int x, int y) {
@@ -478,7 +502,7 @@ static void myMouseMotion(int x, int y) {
 
 		}
 	}
-
+	
 	//cout << "Mouse---xxxxxxxxxx" << mouseScale << endl;
 	//cout << "PRE---yyyyyyyyyy" << preRightMouseX << endl;
 
@@ -503,7 +527,7 @@ int main(int argc, char *argv[]) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
 
-
+	
 	glutDisplayFunc(myRender);
 	glutIdleFunc(myIdle);
 

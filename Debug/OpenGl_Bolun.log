@@ -1,2 +1,9 @@
-﻿  lodepng.cpp
-c1xx : fatal error C1083: Cannot open source file: 'Helper Functions\lodepng\lodepng.cpp': No such file or directory
+﻿  main.cpp
+c:\users\u0828162\documents\opengl_bolun-20180213t025423z-001\opengl_bolun\main.cpp(102): warning C4305: 'argument': truncation from 'double' to 'float'
+c:\users\u0828162\documents\opengl_bolun-20180213t025423z-001\opengl_bolun\main.cpp(218): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun-20180213t025423z-001\opengl_bolun\main.cpp(228): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun-20180213t025423z-001\opengl_bolun\main.cpp(252): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun-20180213t025423z-001\opengl_bolun\main.cpp(260): warning C4018: '<': signed/unsigned mismatch
+c:\users\u0828162\documents\opengl_bolun-20180213t025423z-001\opengl_bolun\main.cpp(275): warning C4018: '<': signed/unsigned mismatch
+  OpenGl_Bolun.vcxproj -> C:\Users\u0828162\Documents\OpenGl_Bolun-20180213T025423Z-001\OpenGl_Bolun\Debug\OpenGl_Bolun.exe
+  OpenGl_Bolun.vcxproj -> C:\Users\u0828162\Documents\OpenGl_Bolun-20180213T025423Z-001\OpenGl_Bolun\Debug\OpenGl_Bolun.pdb (Partial PDB)
