@@ -81,7 +81,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\freeglut\include;$(ProjectDir)Libraries\glew\include;$(ProjectDir)Helper Functions\lodepng;$(ProjectDir)Helper Functions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\freeglut\include;$(ProjectDir)Libraries\glew\include;$(ProjectDir)cyCodeBase;$(ProjectDir)lodepng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -135,26 +135,6 @@
   <ItemGroup>
     <None Include="fragment.glsl" />
     <None Include="vertex.glsl" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Helper Functions\cyBVH.h" />
-    <ClInclude Include="Helper Functions\cyColor.h" />
-    <ClInclude Include="Helper Functions\cyCore.h" />
-    <ClInclude Include="Helper Functions\cyGL.h" />
-    <ClInclude Include="Helper Functions\cyHairFile.h" />
-    <ClInclude Include="Helper Functions\cyHeap.h" />
-    <ClInclude Include="Helper Functions\cyIPoint.h" />
-    <ClInclude Include="Helper Functions\cyLightingGrid.h" />
-    <ClInclude Include="Helper Functions\cyMatrix.h" />
-    <ClInclude Include="Helper Functions\cyPoint.h" />
-    <ClInclude Include="Helper Functions\cyPointCloud.h" />
-    <ClInclude Include="Helper Functions\cyQuat.h" />
-    <ClInclude Include="Helper Functions\cySampleElim.h" />
-    <ClInclude Include="Helper Functions\cySpatial.h" />
-    <ClInclude Include="Helper Functions\cyString.h" />
-    <ClInclude Include="Helper Functions\cyTimer.h" />
-    <ClInclude Include="Helper Functions\cyTriMesh.h" />
-    <ClInclude Include="Helper Functions\lodepng\lodepng.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
