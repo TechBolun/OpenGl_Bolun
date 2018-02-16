@@ -379,7 +379,7 @@ void compileShader() {
 	modelToViewTransform = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
 	modelToWorldTransform = glGetUniformLocation(shaderProgram.GetID(), "MW_tranform");
 
-	lightPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "lightPosition_transform");
+	lightPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "lightPosition_Bolun");
 
 	ambientLightUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "ambientColor_Bolun");
 	cameraPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "cameraPosition_Bolun");
@@ -392,20 +392,25 @@ void compileShader() {
 
 void myIdle() {
 
-	if (LeftMouseButtonDown) {
+	if (controlButtonDown) {
+
+			lightPosition = Matrix3f::MatrixRotationY(leftMouseRotationX) * lightPosition;
+
+			cout << lightPosition.x << endl;
+	}
+	else if (LeftMouseButtonDown) {
 
 		view *= Matrix4f::MatrixRotationX(leftMouseRotationX);
 
 		view *= Matrix4f::MatrixRotationY(leftMouseRotationY);
+
+		cout << controlButtonDown << endl;
 	}
 	else if (RightMouseButtonDown) {
 
 		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale)) ;
 	}
-	else if (controlButtonDown) {
 
-		lightPosition = Matrix3f::MatrixRotationZ(0.1f * leftMouseRotationX) * lightPosition;
-	}
 
 	MVP = projection * view * model;
 
@@ -419,18 +424,19 @@ void myIdle() {
 void myKeyboard(unsigned char key, int x, int y) {
 
 	switch (key) {
-	case 27:
-		delete[] position;
-		delete[] normal;
-		delete[] indices;
-		delete[] uv;
-		delete[] UVindices;
-		exit(0);
+
+		case 27:
+			delete[] position;
+			delete[] normal;
+			delete[] indices;
+			delete[] uv;
+			delete[] UVindices;
+			exit(0);
 
 	}
 }
 
-void functionKeyDown(GLint key, GLint x, GLint y) {
+void functionKeyDown(int key, int x, int y) {
 
 	switch (key)
 	{
@@ -448,20 +454,20 @@ void functionKeyDown(GLint key, GLint x, GLint y) {
 
 }
 
-void functionKeyUp(GLint key, GLint x, GLint y) {
+void functionKeyUp(int key, int x, int y) {
 
 	switch (key)
 	{
-	case 0x72:
-		controlButtonDown = false;
-		break;
+		case 0x72:
+			controlButtonDown = false;
+			break;
 
-	case 0x73:
-		controlButtonDown = false;
-		break;
+		case 0x73:
+			controlButtonDown = false;
+			break;
 
-	default:
-		break;
+		default:
+			break;
 	}
 
 }
@@ -546,7 +552,7 @@ int main(int argc, char *argv[]) {
 
 	glutKeyboardFunc(myKeyboard);
 	glutSpecialFunc(functionKeyDown);
-	//glutSpecialFunc(functionKeyUp);
+	glutSpecialUpFunc(functionKeyUp);
 	glutMouseFunc(myMouse);
 	glutMotionFunc(myMouseMotion);
 
