@@ -40,6 +40,6 @@ void main() {
 
 	fragColor = vec4(ambientColor_Bolun + diffuse + specular, 1.0f);
 
-	//fragColor = Color;
+	//fragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 }

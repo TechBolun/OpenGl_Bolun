@@ -61,6 +61,8 @@ Point2f *uv;
 unsigned int *indices;
 unsigned int *UVindices;
 
+Point3f *posIndices;
+
 Matrix4<float> model;
 Matrix4<float> view;
 Matrix4<float> projection;
@@ -84,8 +86,7 @@ TriMesh objFile;
 Point3f cameraPosition = Point3f(0.0f, -90.0f, 30.0f);
 Point3f targetPosition = Point3f(0.0f, 0.0f, 0.0f);
 
-Point3f initialLightPosition = Point3f(0.0f, 0.0f, 10.0f);
-Point3f lightPosition = initialLightPosition;
+Point3f lightPosition = Point3f(0.0f, 0.0f, 10.0f);
 
 Point3f diffuseColor = Point3f(1.0f, 0.0f, 1.0f);
 Point3f specularColor = Point3f(0.0f, 1.0f, 1.0f);
@@ -114,13 +115,13 @@ void modelToViewTransformation() {
 	MV.Transpose();
 }
 
-/*
-	set light tranformation 
-*/
-void lightTransformation() {
-	lightPosition = Point3f();
-	//lightPosition = Matrix3f::MatrixRotationX()
-}
+///*
+//	set light tranformation 
+//*/
+//void lightTransformation() {
+//	lightPosition = Point3f();
+//	//lightPosition = Matrix3f::MatrixRotationX()
+//}
 
 void BlinnShading() {
 
@@ -128,6 +129,7 @@ void BlinnShading() {
 	glUniform3fv(cameraPositionUniformLocation, 1, &cameraPosition[0]);
 	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
 
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	glUniform1i(diffuseUniformLocation, 0);
 	glUniform1i(specularUniformLocation, 1);
@@ -247,6 +249,7 @@ void loadObj() {
 	cout << numUVindices << endl;
 
 	uv = new Point2f[numIndices];
+
 	UVindices = new unsigned int[numUVindices];
 
 	for (int i = 0; i < numUVindices; i++) {
@@ -255,6 +258,7 @@ void loadObj() {
 	}
 
 
+	posIndices = new Point3f[numIndices];
 
 
 	for (int i = 0; i < numFaces; i ++) {
@@ -263,6 +267,9 @@ void loadObj() {
 		indices[3 * i + 1] = objFile.F(i).v[1];
 		indices[3 * i + 2] = objFile.F(i).v[2];
 
+		posIndices[3 * i] = objFile.V(objFile.F(i).v[0]);
+		posIndices[3 * i + 1] = objFile.V(objFile.F(i).v[1]);
+		posIndices[3 * i + 2] = objFile.V(objFile.F(i).v[2]);
 
 		TriMesh::TriFace texFace = objFile.FT(i);
 
@@ -372,8 +379,9 @@ void compileShader() {
 	modelToViewTransform = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
 	modelToWorldTransform = glGetUniformLocation(shaderProgram.GetID(), "MW_tranform");
 
+	lightPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "lightPosition_transform");
+
 	ambientLightUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "ambientColor_Bolun");
-	lightPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "lightPosition_Bolun");
 	cameraPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "cameraPosition_Bolun");
 
 	diffuseUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "diffuse_Bolun");
@@ -386,13 +394,17 @@ void myIdle() {
 
 	if (LeftMouseButtonDown) {
 
-		view *= Matrix4<float>::MatrixRotationX(leftMouseRotationX);
+		view *= Matrix4f::MatrixRotationX(leftMouseRotationX);
 
-		view *= Matrix4<float>::MatrixRotationY(leftMouseRotationY);
+		view *= Matrix4f::MatrixRotationY(leftMouseRotationY);
 	}
-	if (RightMouseButtonDown) {
+	else if (RightMouseButtonDown) {
 
 		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale)) ;
+	}
+	else if (controlButtonDown) {
+
+		lightPosition = Matrix3f::MatrixRotationZ(0.1f * leftMouseRotationX) * lightPosition;
 	}
 
 	MVP = projection * view * model;
@@ -424,8 +436,14 @@ void functionKeyDown(GLint key, GLint x, GLint y) {
 	{
 		case 0x72:
 			controlButtonDown = true;
+			break;
+
 		case 0x73:
 			controlButtonDown = true;
+			break;
+
+		default:
+			break;
 	}
 
 }
@@ -436,8 +454,14 @@ void functionKeyUp(GLint key, GLint x, GLint y) {
 	{
 	case 0x72:
 		controlButtonDown = false;
+		break;
+
 	case 0x73:
 		controlButtonDown = false;
+		break;
+
+	default:
+		break;
 	}
 
 }
@@ -475,36 +499,25 @@ static void myMouseMotion(int x, int y) {
 
 	if (RightMouseButtonDown) {
 
-		if (!controlButtonDown) {
 
 			rightMouseScale = 0.5f * (preRightMouseX - x);
 			rightMouseScale = 0.5f * (preRightMouseY - y);
 
 			preRightMouseX = x;
 			preRightMouseY = y;
-		}
-		else {
 
-		}
 	}
 
 	if (LeftMouseButtonDown) {
 
-		if (!controlButtonDown) {
 
 			leftMouseRotationX = 0.02f * (preLeftMouseX - x);
 			leftMouseRotationY = 0.02f * (preLeftMouseY - y);
 
 			preLeftMouseX = x;
 			preLeftMouseY = y;
-		}
-		else {
 
-		}
 	}
-	
-	//cout << "Mouse---xxxxxxxxxx" << mouseScale << endl;
-	//cout << "PRE---yyyyyyyyyy" << preRightMouseX << endl;
 
 }
 

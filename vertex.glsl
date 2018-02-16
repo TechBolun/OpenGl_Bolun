@@ -8,6 +8,8 @@ uniform mat4 MVP_tranform;
 uniform mat4 MV_tranform;
 uniform mat4 MW_tranform;
 
+uniform mat3 lightPosition_transform;
+
 out vec3 worldPos;
 out vec3 worldNormal;
 out vec4 Color;
