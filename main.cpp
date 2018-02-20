@@ -51,25 +51,31 @@ float rightMouseY;
 int preRightMouseX;
 int preRightMouseY;
 
+const int window_width = 1024;
+const int window_height = 1024;
+
 //unsigned width, height;
 //vector<unsigned char> texture;
 unsigned int convertPNG;
 
 Point3f *position;
 Point3f *normal;
-Point2f *uv;
+Point3f *uv;
 unsigned int *indices;
 unsigned int *UVindices;
 
 Point3f *posIndices;
+Point3f *normalIndices;
 
 Matrix4<float> model;
 Matrix4<float> view;
 Matrix4<float> projection;
 
-Matrix4<float> MVP;
+Matrix4f MVP;
 Matrix4f MV;;
-Matrix4<float> temp;
+Matrix4f temp;
+
+Matrix4f MVP_plane;
 
 GLuint VAO;
 GLuint VBO;	// vertices
@@ -77,7 +83,11 @@ GLuint VNBO;	// vertices  NORMAL
 GLuint UVBO; // UV
 GLuint EAO; // indeice 
 
+GLuint plane_VAO;
+GLuint plane_VBO;
+
 GLSLProgram shaderProgram;
+GLSLProgram shaderProgramRenderToTexture;
 
 TriMesh::Mtl mat;
 
@@ -92,60 +102,41 @@ Point3f diffuseColor = Point3f(1.0f, 0.0f, 1.0f);
 Point3f specularColor = Point3f(0.0f, 1.0f, 1.0f);
 Point3f ambientLight = Point3f(0.2f, 0.2f, 0.2f);
 
+GLRenderTexture2D renderedTexture;
 
-/*
-	set model to projection transformation matrix4
-*/
-static void fullTransformation() {
+GLfloat plane_vextex_buffer_data[] = {
 
-
-	view.SetView(cameraPosition, targetPosition, Point3f(0.0f, 1.0f, 0.0f));
-	projection.SetPerspective(1, 1, 0.1, 300);
-
-	MVP = projection * view * model;
-}
-
-/*
-	set model to view transformation matrix4
-*/
-void modelToViewTransformation() {
-
-	MV = view * model;
-	MV.Invert();
-	MV.Transpose();
-}
-
-///*
-//	set light tranformation 
-//*/
-//void lightTransformation() {
-//	lightPosition = Point3f();
-//	//lightPosition = Matrix3f::MatrixRotationX()
-//}
-
-void BlinnShading() {
-
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
-	glUniform3fv(cameraPositionUniformLocation, 1, &cameraPosition[0]);
-	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
-
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
-
-	glUniform1i(diffuseUniformLocation, 0);
-	glUniform1i(specularUniformLocation, 1);
-	//glUniform3fv(diffuseUniformLocation, 1, &diffuseColor[0]);
-	//glUniform3fv(specularUniformLocation, 1, &specularColor[0]);
-
-}
-
-void initialTexture() {
+		-15.0f, -15.0f, 0.0f,  //vertex
+		0.0f, 0.0f, 0.0f,   //normal
+		0.0,  0.0, 0.0f,	//UV
+		15.0f, -15.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		1.0,  0.0, 0.0f,
+		-15.0f,  15.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0,  1.0, 0.0f,
+		-15.0f,  15.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0,  1.0, 0.0f,
+		15.0f, -15.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		1.0,  0.0, 0.0f,
+		15.0f,  15.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		1.0,  1.0, 0.0f,
+};
 
 
-
-
-
-
-}
+void fullTransformation();
+void modelToViewTransformation();
+void BlinnShading();
+void loadObj();
+void renderToTexture();
+void indexBuffer();
+void compileShader();
+void renderToTexture();
+void renderToTextureTransformation();
+void renderToTextureBuffers();
 
 /*
 	display function
@@ -154,7 +145,7 @@ void initialTexture() {
 void myRender() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	//renderedTexture.Bind();
 	glUseProgram(shaderProgram.GetID());
 
 	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
@@ -177,15 +168,53 @@ void myRender() {
 
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EAO);
 
-	//glDrawArrays(GL_TRIANGLES, 0, numIndices);
+	glDrawArrays(GL_TRIANGLES, 0, numIndices);
 
-	glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
+	//glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
 
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
 
 	glutSwapBuffers();
+}
+
+/*
+set model to projection transformation matrix4
+*/
+void fullTransformation() {
+
+
+	view.SetView(cameraPosition, targetPosition, Point3f(0.0f, 1.0f, 0.0f));
+	projection.SetPerspective(1, 1, 0.1, 300);
+
+	MVP = projection * view * model;
+}
+
+/*
+set model to view transformation matrix4
+*/
+void modelToViewTransformation() {
+
+	MV = view * model;
+	MV.Invert();
+	MV.Transpose();
+}
+
+void BlinnShading() {
+
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+	glUniform3fv(cameraPositionUniformLocation, 1, &cameraPosition[0]);
+	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
+
+	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+
+	glUniform1i(diffuseUniformLocation, 0);
+	glUniform1i(specularUniformLocation, 1);
+	//glUniform3fv(diffuseUniformLocation, 1, &diffuseColor[0]);
+	//glUniform3fv(specularUniformLocation, 1, &specularColor[0]);
+
+}
+
+void initialTexture() {
+
 }
 
 /*
@@ -200,6 +229,12 @@ void loadObj() {
 	if (!loadSuccess) {
 		cout << "load file ERROR" << endl;
 	}
+
+	shaderProgram.CreateProgram();
+	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
+
+	shaderProgramRenderToTexture.CreateProgram();
+	shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
 
 	model.SetIdentity();
 
@@ -242,24 +277,11 @@ void loadObj() {
 	indices = new unsigned int[numIndices];
 
 
-	
-
-	numUVindices = objFile.NVT();
-
-	cout << numUVindices << endl;
-
-	uv = new Point2f[numIndices];
-
-	UVindices = new unsigned int[numUVindices];
-
-	for (int i = 0; i < numUVindices; i++) {
-		uv[i].x = objFile.V(i).x;
-		uv[i].y = objFile.V(i).y;
-	}
-
-
 	posIndices = new Point3f[numIndices];
 
+	normalIndices = new Point3f[numIndices];
+
+	uv = new Point3f[numIndices];
 
 	for (int i = 0; i < numFaces; i ++) {
 
@@ -267,19 +289,24 @@ void loadObj() {
 		indices[3 * i + 1] = objFile.F(i).v[1];
 		indices[3 * i + 2] = objFile.F(i).v[2];
 
-		posIndices[3 * i] = objFile.V(objFile.F(i).v[0]);
-		posIndices[3 * i + 1] = objFile.V(objFile.F(i).v[1]);
-		posIndices[3 * i + 2] = objFile.V(objFile.F(i).v[2]);
+		TriMesh::TriFace vertexFace = objFile.F(i);
+
+		// numfaces * 3 = positions
+		posIndices[3 * i] = objFile.V(vertexFace.v[0]);
+		posIndices[3 * i + 1] = objFile.V(vertexFace.v[1]);
+		posIndices[3 * i + 2] = objFile.V(vertexFace.v[2]);
+
+		TriMesh::TriFace normalFace = objFile.FN(i);
+
+		normalIndices[3 * i] = objFile.VN(normalFace.v[0]);
+		normalIndices[3 * i + 1] = objFile.VN(normalFace.v[1]);
+		normalIndices[3 * i + 2] = objFile.VN(normalFace.v[2]);
 
 		TriMesh::TriFace texFace = objFile.FT(i);
-
-		uv[3 * i] = Point2f(objFile.VT(texFace.v[0]));
-		uv[3 * i + 1] = Point2f(objFile.VT(texFace.v[1]));
-		uv[3 * i + 2] = Point2f(objFile.VT(texFace.v[2]));
-
-	}
-
-	for (int i = 0; i < numFaces; i++) {
+		
+		uv[3 * i] = Point3f(objFile.VT(texFace.v[0]));
+		uv[3 * i + 1] = Point3f(objFile.VT(texFace.v[1]));
+		uv[3 * i + 2] = Point3f(objFile.VT(texFace.v[2]));
 
 	}
 
@@ -304,6 +331,8 @@ void loadObj() {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		glGenerateMipmap(GL_TEXTURE_2D);
+
 	}
 
 	{
@@ -322,11 +351,47 @@ void loadObj() {
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
+	renderToTexture();
+	renderToTextureTransformation();
+	renderToTextureBuffers();
+}
 
+void renderToTexture() {
 
-	
+	renderedTexture.Initialize(true, 3, window_width, window_height);
+	renderedTexture.SetTextureFilteringMode(GL_LINEAR, 0);
+	renderedTexture.SetTextureMaxAnisotropy();
+	renderedTexture.BuildTextureMipmaps();
+
+}
+
+void renderToTextureTransformation() {
+
+	MVP_plane = projection * view * model;
+}
+
+void renderToTextureBuffers() {
+
+	glGenVertexArrays(1, &plane_VAO);
+	glBindVertexArray(plane_VAO);
+
+	glGenBuffers(1, &plane_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, plane_VBO);
+	glBufferData(GL_ARRAY_BUFFER, 18 * (sizeof(Point3f)), &plane_vextex_buffer_data[0], GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), 0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)(sizeof(Point3f)));
+	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)( 2 * sizeof(Point3f)));
+	glEnableVertexAttribArray(2);
+
 }
 
 void indexBuffer() {
@@ -349,17 +414,30 @@ void vertexBuffer() {
 	// vertex buffer
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertices, position, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, posIndices, GL_STATIC_DRAW);
+
+	//glEnableVertexAttribArray(0);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
 
 	//vertex normal
 	glGenBuffers(1, &VNBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VNBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numVertexNormal, normal, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, normalIndices, GL_STATIC_DRAW);
 
-	//vertex normal
+	//glEnableVertexAttribArray(1);
+	//glBindBuffer(GL_ARRAY_BUFFER, VNBO);
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	//texCoord
 	glGenBuffers(1, &UVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, UVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Point2f) * numIndices, uv, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, uv, GL_STATIC_DRAW);
+
+	//glEnableVertexAttribArray(2);
+	//glBindBuffer(GL_ARRAY_BUFFER, UVBO);
+	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	indexBuffer();
 }
@@ -370,10 +448,10 @@ void vertexBuffer() {
 */
 void compileShader() {
 
-	shaderProgram.CreateProgram();
-	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
+	//shaderProgram.CreateProgram();
+	//shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
 
-	glUseProgram(shaderProgram.GetID());
+	//glUseProgram(shaderProgram.GetID());
 
 	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
 	modelToViewTransform = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
@@ -394,9 +472,12 @@ void myIdle() {
 
 	if (controlButtonDown) {
 
+		if (LeftMouseButtonDown) {
+
 			lightPosition = Matrix3f::MatrixRotationY(leftMouseRotationX) * lightPosition;
 
 			cout << lightPosition.x << endl;
+		}
 	}
 	else if (LeftMouseButtonDown) {
 
@@ -431,6 +512,7 @@ void myKeyboard(unsigned char key, int x, int y) {
 			delete[] indices;
 			delete[] uv;
 			delete[] UVindices;
+			delete[] normalIndices;
 			exit(0);
 
 	}
@@ -534,7 +616,7 @@ int main(int argc, char *argv[]) {
 	cout << "Bolun" << endl;
 
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowSize(1024, 720);
+	glutInitWindowSize(window_width, window_height);
 	glutInitWindowPosition(100, 100);
 
 	glutCreateWindow("OpenGL Window - Bolun Gao");
@@ -546,6 +628,12 @@ int main(int argc, char *argv[]) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
 
+	vertexBuffer();
+
+	compileShader();
+
+	fullTransformation();
+	modelToViewTransformation();
 	
 	glutDisplayFunc(myRender);
 	glutIdleFunc(myIdle);
@@ -555,15 +643,6 @@ int main(int argc, char *argv[]) {
 	glutSpecialUpFunc(functionKeyUp);
 	glutMouseFunc(myMouse);
 	glutMotionFunc(myMouseMotion);
-
-	initialTexture();
-
-	vertexBuffer();
-
-	compileShader();
-
-	fullTransformation();
-	modelToViewTransformation();
 
 	glutMainLoop();
 }
