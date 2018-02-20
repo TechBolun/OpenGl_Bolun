@@ -134,8 +134,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment.glsl" />
-    <None Include="Shaders\renderToTextureFragment.glsl" />
-    <None Include="Shaders\renderToTextureVertex.glsl" />
+    <None Include="renderToTextureFragment.glsl" />
+    <None Include="renderToTextureVertex.glsl" />
     <None Include="vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
