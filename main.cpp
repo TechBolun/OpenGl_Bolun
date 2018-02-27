@@ -1,7 +1,7 @@
 ﻿/*
-	Bolun Gao
+Bolun Gao
 
-	*/
+*/
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "lodepng/lodepng.h"
@@ -39,6 +39,7 @@ GLuint specularUniformLocation;
 
 GLuint diffuse_ID;
 GLuint specular_ID;
+GLuint skyboxTexture_ID;
 
 bool LeftMouseButtonDown;
 bool RightMouseButtonDown;
@@ -59,16 +60,12 @@ const int window_height = 800;
 
 unsigned width, height;
 vector<unsigned char> texture;
-unsigned int convertPNG;
+unsigned int convertTextureToData;
 
 Point3f *position;
 Point3f *normal;
 Point3f *uv;
 unsigned int *indices;
-unsigned int *UVindices;
-
-Point3f *posIndices;
-Point3f *normalIndices;
 
 Matrix4f model;
 Matrix4f view;
@@ -99,6 +96,7 @@ GLuint skybox_VBO;
 
 GLSLProgram shaderProgram;
 GLSLProgram shaderProgramRenderToTexture;
+GLSLProgram shaderProgramSkybox;
 
 TriMesh::Mtl mat;
 
@@ -115,99 +113,109 @@ Point3f ambientLight = Point3f(0.2f, 0.2f, 0.2f);
 
 GLRenderTexture2D renderedTexture;
 
+string teapotPath = "Mesh/teapot.obj";
+
 GLfloat plane_vextex_buffer_data[] = {
 
-		-15.0f, -15.0f, 0.0f,  //vertex
-		0.0f, 0.0f, 0.0f,   //normal
-		0.0,  0.0, 0.0f,	//UV
+	-15.0f, -15.0f, 0.0f,  //vertex
+	0.0f, 0.0f, 0.0f,   //normal
+	0.0,  0.0, 0.0f,	//UV
 
-		15.0f, -15.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		1.0,  0.0, 0.0f,
+	15.0f, -15.0f, 0.0f,
+	0.0f, 0.0f, 0.0f,
+	1.0,  0.0, 0.0f,
 
-		-15.0f,  15.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0,  1.0, 0.0f,
+	-15.0f,  15.0f, 0.0f,
+	0.0f, 0.0f, 0.0f,
+	0.0,  1.0, 0.0f,
 
-		-15.0f,  15.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0,  1.0, 0.0f,
+	-15.0f,  15.0f, 0.0f,
+	0.0f, 0.0f, 0.0f,
+	0.0,  1.0, 0.0f,
 
-		15.0f, -15.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		1.0,  0.0, 0.0f,
+	15.0f, -15.0f, 0.0f,
+	0.0f, 0.0f, 0.0f,
+	1.0,  0.0, 0.0f,
 
-		15.0f,  15.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		1.0,  1.0, 0.0f,
+	15.0f,  15.0f, 0.0f,
+	0.0f, 0.0f, 0.0f,
+	1.0,  1.0, 0.0f,
 };
 
 GLfloat skybox_vextex_buffer_data[] = {
 
-		-20.0f,  20.0f, -20.0f,
-		-20.0f, -20.0f, -20.0f,
-		20.0f, -20.0f, -20.0f,
-		20.0f, -20.0f, -20.0f,
-		20.0f,  20.0f, -20.0f,
-		-20.0f,  20.0f, -20.0f,
+	-20.0f,  20.0f, -20.0f,
+	-20.0f, -20.0f, -20.0f,
+	20.0f, -20.0f, -20.0f,
+	20.0f, -20.0f, -20.0f,
+	20.0f,  20.0f, -20.0f,
+	-20.0f,  20.0f, -20.0f,
 
-		-20.0f, -20.0f,  20.0f,
-		-20.0f, -20.0f, -20.0f,
-		-20.0f,  20.0f, -20.0f,
-		-20.0f,  20.0f, -20.0f,
-		-20.0f,  20.0f,  20.0f,
-		-20.0f, -20.0f,  20.0f,
+	-20.0f, -20.0f,  20.0f,
+	-20.0f, -20.0f, -20.0f,
+	-20.0f,  20.0f, -20.0f,
+	-20.0f,  20.0f, -20.0f,
+	-20.0f,  20.0f,  20.0f,
+	-20.0f, -20.0f,  20.0f,
 
-		20.0f, -20.0f, -20.0f,
-		20.0f, -20.0f,  20.0f,
-		20.0f,  20.0f,  20.0f,
-		20.0f,  20.0f,  20.0f,
-		20.0f,  20.0f, -20.0f,
-		20.0f, -20.0f, -20.0f,
+	20.0f, -20.0f, -20.0f,
+	20.0f, -20.0f,  20.0f,
+	20.0f,  20.0f,  20.0f,
+	20.0f,  20.0f,  20.0f,
+	20.0f,  20.0f, -20.0f,
+	20.0f, -20.0f, -20.0f,
 
-		-20.0f, -20.0f,  20.0f,
-		-20.0f,  20.0f,  20.0f,
-		20.0f,  20.0f,  20.0f,
-		20.0f,  20.0f,  20.0f,
-		20.0f, -20.0f,  20.0f,
-		-20.0f, -20.0f,  20.0f,
+	-20.0f, -20.0f,  20.0f,
+	-20.0f,  20.0f,  20.0f,
+	20.0f,  20.0f,  20.0f,
+	20.0f,  20.0f,  20.0f,
+	20.0f, -20.0f,  20.0f,
+	-20.0f, -20.0f,  20.0f,
 
-		-20.0f,  20.0f, -20.0f,
-		20.0f,  20.0f, -20.0f,
-		20.0f,  20.0f,  20.0f,
-		20.0f,  20.0f,  20.0f,
-		-20.0f,  20.0f,  20.0f,
-		-20.0f,  20.0f, -20.0f,
+	-20.0f,  20.0f, -20.0f,
+	20.0f,  20.0f, -20.0f,
+	20.0f,  20.0f,  20.0f,
+	20.0f,  20.0f,  20.0f,
+	-20.0f,  20.0f,  20.0f,
+	-20.0f,  20.0f, -20.0f,
 
-		-20.0f, -20.0f, -20.0f,
-		-20.0f, -20.0f,  20.0f,
-		20.0f, -20.0f, -20.0f,
-		20.0f, -20.0f, -20.0f,
-		-20.0f, -20.0f,  20.0f,
-		20.0f, -20.0f,  20.0f
+	-20.0f, -20.0f, -20.0f,
+	-20.0f, -20.0f,  20.0f,
+	20.0f, -20.0f, -20.0f,
+	20.0f, -20.0f, -20.0f,
+	-20.0f, -20.0f,  20.0f,
+	20.0f, -20.0f,  20.0f
 };
 
+vector<string> skyboxFaces = {
+	"Skybox/cubemap_negx.PNG",
+	"Skybox/cubemap_negy.PNG",
+	"Skybox/cubemap_negz.PNG",
+	"Skybox/cubemap_posx.PNG",
+	"Skybox/cubemap_posy.PNG",
+	"Skybox/cubemap_posz.PNG",
+};
 
 void fullTransformation();
 void modelToViewTransformation();
 void BlinnShading();
-void loadObj();
 void renderToTexture();
 void indexBuffer();
 void compileShader();
 void initialTexture();
 void renderToTexture();
 void renderToTextureTransformation();
+void initialShaderProgram();
 
 /*
-	display function
+display function
 */
 
 void myRender() {
 
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	
-	renderedTexture.Bind();
+
+	//renderedTexture.Bind();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -223,27 +231,27 @@ void myRender() {
 
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, numIndices);
-	//glBindVertexArray(0);
+	glBindVertexArray(0);
 
-	renderedTexture.Unbind();
+	//renderedTexture.Unbind();
 
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(shaderProgramRenderToTexture.GetID());
+	//glUseProgram(shaderProgramRenderToTexture.GetID());
 
-	fullTransformRenderToTexturePlane = glGetUniformLocation(shaderProgramRenderToTexture.GetID(), "MVP_RenderToTexturePlane");
-	
-	renderToTextureTransformation();
+	//fullTransformRenderToTexturePlane = glGetUniformLocation(shaderProgramRenderToTexture.GetID(), "MVP_RenderToTexturePlane");
 
-	glUniformMatrix4fv(fullTransformRenderToTexturePlane, 1, GL_FALSE, &MVP_plane.data[0]);
+	//renderToTextureTransformation();
 
-	glActiveTexture(GL_TEXTURE0);
-	renderedTexture.BindTexture();
+	//glUniformMatrix4fv(fullTransformRenderToTexturePlane, 1, GL_FALSE, &MVP_plane.data[0]);
 
-	glBindVertexArray(plane_VAO);
-	glDrawArrays(GL_TRIANGLES, 0, sizeof(plane_vextex_buffer_data));
+	//glActiveTexture(GL_TEXTURE0);
+	//renderedTexture.BindTexture();
+
+	//glBindVertexArray(plane_VAO);
+	//glDrawArrays(GL_TRIANGLES, 0, sizeof(plane_vextex_buffer_data));
 	//glBindVertexArray(0);
 
 	glutSwapBuffers();
@@ -288,6 +296,91 @@ void BlinnShading() {
 
 }
 
+void initialShaderProgram() {
+
+	shaderProgram.CreateProgram();
+	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
+
+	shaderProgramRenderToTexture.CreateProgram();
+	shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
+
+	shaderProgramSkybox.CreateProgram();
+	shaderProgramSkybox.BuildFiles("SkyboxVertex.glsl", "SkyboxFragment.glsl");
+}
+
+/*
+load obj file
+*/
+
+void loadObj(string name) {
+
+	bool loadSuccess = objFile.LoadFromFileObj(name.c_str());
+
+
+	if (!loadSuccess) {
+		cout << "load file ERROR" << endl;
+	}
+
+	model.SetIdentity();
+
+	objFile.ComputeBoundingBox();
+
+	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
+
+	numVertices = objFile.NV(); // get vertices
+
+	numVertexNormal = objFile.NVN(); //get vertex normal
+
+
+	numFaces = objFile.NF();
+
+	numIndices = numFaces * 3;
+
+
+	indices = new unsigned int[numIndices];
+
+
+	position = new Point3f[numIndices];
+
+	normal = new Point3f[numIndices];
+
+	uv = new Point3f[numIndices];
+
+	for (int i = 0; i < numFaces; i++) {
+
+		indices[3 * i] = objFile.F(i).v[0];
+		indices[3 * i + 1] = objFile.F(i).v[1];
+		indices[3 * i + 2] = objFile.F(i).v[2];
+
+		TriMesh::TriFace vertexFace = objFile.F(i);
+
+		// numfaces * 3 = positions
+		position[3 * i] = objFile.V(vertexFace.v[0]);
+		position[3 * i + 1] = objFile.V(vertexFace.v[1]);
+		position[3 * i + 2] = objFile.V(vertexFace.v[2]);
+
+		TriMesh::TriFace normalFace = objFile.FN(i);
+
+		normal[3 * i] = objFile.VN(normalFace.v[0]);
+		normal[3 * i + 1] = objFile.VN(normalFace.v[1]);
+		normal[3 * i + 2] = objFile.VN(normalFace.v[2]);
+
+		TriMesh::TriFace texFace = objFile.FT(i);
+
+		uv[3 * i] = Point3f(objFile.VT(texFace.v[0]));
+		uv[3 * i + 1] = Point3f(objFile.VT(texFace.v[1]));
+		uv[3 * i + 2] = Point3f(objFile.VT(texFace.v[2]));
+
+	}
+
+
+
+	//shaderProgramRenderToTexture.CreateProgram();
+	//shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
+
+	//cout << renderedTexture.IsComplete() << endl;
+}
+
 void initialTexture() {
 
 	mat = objFile.M(0); //get first material
@@ -300,9 +393,8 @@ void initialTexture() {
 
 		// store diffuse to texture
 
-		convertPNG = decode(texture, width, height, mat.map_Kd.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
+		convertTextureToData = decode(texture, width, height, mat.map_Kd.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
 
-		//glActiveTexture(GL_TEXTURE0);
 		glGenTextures(1, &diffuse_ID);
 		glBindTexture(GL_TEXTURE_2D, diffuse_ID);
 
@@ -321,9 +413,8 @@ void initialTexture() {
 
 		// store specular to texture
 
-		convertPNG = decode(texture, width, height, mat.map_Ks.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
+		convertTextureToData = decode(texture, width, height, mat.map_Ks.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
 
-		//glActiveTexture(GL_TEXTURE1);
 		glGenTextures(1, &specular_ID);
 		glBindTexture(GL_TEXTURE_2D, specular_ID);
 
@@ -336,110 +427,6 @@ void initialTexture() {
 	}
 }
 
-/*
-	load obj file
-*/
-
-void loadObj() {
-
-	bool loadSuccess = objFile.LoadFromFileObj("teapot.obj");
-
-
-	if (!loadSuccess) {
-		cout << "load file ERROR" << endl;
-	}
-
-	shaderProgram.CreateProgram();
-	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
-
-	shaderProgramRenderToTexture.CreateProgram();
-	shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
-
-	model.SetIdentity();
-
-	objFile.ComputeBoundingBox();
-
-	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
-
-	numVertices = objFile.NV(); // get vertices
-	cout << numVertices << endl;
-
-	numVertexNormal = objFile.NVN(); //get vertex normal
-	cout << numVertexNormal << endl;
-
-	//store vertices to position buffer
-
-	position = new Point3f[numVertices];
-
-	for (int i = 0; i < numVertices; i++) {
-		position[i].x = objFile.V(i).x;
-		position[i].y = objFile.V(i).y;
-		position[i].z = objFile.V(i).z;
-	}
-
-	// store vertex normal to normal buffer
-
-	normal = new Point3f[numVertexNormal];
-
-	for (int i = 0; i < numVertexNormal; i++) {
-		normal[i].x = objFile.VN(i).x;
-		normal[i].y = objFile.VN(i).y;
-		normal[i].z = objFile.VN(i).z;
-	}
-
-	// store face vertices to indices buffer
-
-	numFaces = objFile.NF();
-
-	numIndices = numFaces * 3;
-
-	cout << numIndices << endl;
-
-	indices = new unsigned int[numIndices];
-
-
-	posIndices = new Point3f[numIndices];
-
-	normalIndices = new Point3f[numIndices];
-
-	uv = new Point3f[numIndices];
-
-	for (int i = 0; i < numFaces; i ++) {
-
-		indices[3 * i] = objFile.F(i).v[0];
-		indices[3 * i + 1] = objFile.F(i).v[1];
-		indices[3 * i + 2] = objFile.F(i).v[2];
-
-		TriMesh::TriFace vertexFace = objFile.F(i);
-
-		// numfaces * 3 = positions
-		posIndices[3 * i] = objFile.V(vertexFace.v[0]);
-		posIndices[3 * i + 1] = objFile.V(vertexFace.v[1]);
-		posIndices[3 * i + 2] = objFile.V(vertexFace.v[2]);
-
-		TriMesh::TriFace normalFace = objFile.FN(i);
-
-		normalIndices[3 * i] = objFile.VN(normalFace.v[0]);
-		normalIndices[3 * i + 1] = objFile.VN(normalFace.v[1]);
-		normalIndices[3 * i + 2] = objFile.VN(normalFace.v[2]);
-
-		TriMesh::TriFace texFace = objFile.FT(i);
-		
-		uv[3 * i] = Point3f(objFile.VT(texFace.v[0]));
-		uv[3 * i + 1] = Point3f(objFile.VT(texFace.v[1]));
-		uv[3 * i + 2] = Point3f(objFile.VT(texFace.v[2]));
-
-	}
-
-	initialTexture();
-
-	renderToTexture();
-
-	//shaderProgramRenderToTexture.CreateProgram();
-	//shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
-
-	//cout << renderedTexture.IsComplete() << endl;
-}
 
 void initialSkybox() {
 
@@ -455,10 +442,33 @@ void initialSkybox() {
 
 }
 
+void loadSkybox() {
+
+	glGenTextures(1, &skyboxTexture_ID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture_ID);
+
+	unsigned width, height;
+	vector<unsigned char> skyboxTexture;
+
+	for (int i = 0; i < skyboxFaces.size(); i++) {
+
+		convertTextureToData = decode(skyboxTexture, width, height, skyboxFaces[i], LCT_RGBA);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, skyboxTexture.data());
+
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+}
+
 void renderToTexture() {
 
 	renderedTexture.Initialize(true, 3, window_width, window_height);
-	
+
 	renderedTexture.SetTextureMaxAnisotropy();
 	renderedTexture.SetTextureFilteringMode(GL_LINEAR, 0);
 	renderedTexture.BuildTextureMipmaps();
@@ -472,13 +482,13 @@ void renderToTexture() {
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), 0);
-	
+
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)(sizeof(Point3f)));
-	
+
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)( 2 * sizeof(Point3f)));
-	
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)(2 * sizeof(Point3f)));
+
 }
 
 void renderToTextureTransformation() {
@@ -500,7 +510,7 @@ void indexBuffer() {
 }
 
 /*
-	create vertex buffer
+create vertex buffer
 */
 void vertexBuffer() {
 
@@ -510,7 +520,7 @@ void vertexBuffer() {
 	// vertex buffer
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, posIndices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, position, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -519,7 +529,7 @@ void vertexBuffer() {
 	//vertex normal
 	glGenBuffers(1, &VNBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VNBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, normalIndices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Point3f) * numIndices, normal, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -537,7 +547,7 @@ void vertexBuffer() {
 
 
 /*
-	compile shaders
+compile shaders
 */
 void compileShader() {
 
@@ -565,7 +575,6 @@ void myIdle() {
 
 			lightPosition = Matrix3f::MatrixRotationY(leftMouseRotationX) * lightPosition;
 
-			cout << lightPosition.x << endl;
 		}
 	}
 	else if (altButtonDown) {
@@ -576,14 +585,14 @@ void myIdle() {
 
 			viewPlane *= Matrix4f::MatrixRotationY(leftMouseRotationY);
 
-			
+
 		}
 		else if (RightMouseButtonDown) {
 
 			viewPlane.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale));
 
 		}
-		
+
 		//MVP_plane = projectionPlane * viewPlane * modelPlane;
 	}
 	else if (LeftMouseButtonDown) {
@@ -591,8 +600,6 @@ void myIdle() {
 		view *= Matrix4f::MatrixRotationX(leftMouseRotationX);
 
 		view *= Matrix4f::MatrixRotationY(leftMouseRotationY);
-
-		cout << controlButtonDown << endl;
 
 		//MVP = projection * view * model;
 	}
@@ -611,21 +618,18 @@ void myIdle() {
 }
 
 /*
-	keyboard input
+keyboard input
 */
 void myKeyboard(unsigned char key, int x, int y) {
 
 	switch (key) {
 
-		case 27:
-			delete[] position;
-			delete[] normal;
-			delete[] indices;
-			delete[] uv;
-			delete[] UVindices;
-			delete[] normalIndices;
-			delete[] posIndices;
-			exit(0);
+	case 27:
+		delete[] position;
+		delete[] normal;
+		delete[] uv;
+		delete[] indices;
+		exit(0);
 
 	}
 }
@@ -634,20 +638,20 @@ void functionKeyDown(int key, int x, int y) {
 
 	switch (key)
 	{
-		case 0x72:
-			controlButtonDown = true;
-			break;
+	case 0x72:
+		controlButtonDown = true;
+		break;
 
-		case 0x73:
-			controlButtonDown = true;
-			break;
+	case 0x73:
+		controlButtonDown = true;
+		break;
 
-		case 0x12:
-			altButtonDown = true;
-			break;
+	case 0x12:
+		altButtonDown = true;
+		break;
 
-		default:
-			break;
+	default:
+		break;
 	}
 
 }
@@ -656,26 +660,26 @@ void functionKeyUp(int key, int x, int y) {
 
 	switch (key)
 	{
-		case 0x72:
-			controlButtonDown = false;
-			break;
+	case 0x72:
+		controlButtonDown = false;
+		break;
 
-		case 0x73:
-			controlButtonDown = false;
-			break;
+	case 0x73:
+		controlButtonDown = false;
+		break;
 
-		case 0x12:
-			altButtonDown = false;
-			break;
+	case 0x12:
+		altButtonDown = false;
+		break;
 
-		default:
-			break;
+	default:
+		break;
 	}
 
 }
 
 /*
-	get mouse click
+get mouse click
 */
 static void myMouse(int button, int state, int x, int y) {
 
@@ -700,7 +704,7 @@ static void myMouse(int button, int state, int x, int y) {
 }
 
 /*
-	tracking mouse movement
+tracking mouse movement
 */
 
 static void myMouseMotion(int x, int y) {
@@ -708,22 +712,22 @@ static void myMouseMotion(int x, int y) {
 	if (RightMouseButtonDown) {
 
 
-			rightMouseScale = 0.5f * (preRightMouseX - x);
-			rightMouseScale = 0.5f * (preRightMouseY - y);
+		rightMouseScale = 0.5f * (preRightMouseX - x);
+		rightMouseScale = 0.5f * (preRightMouseY - y);
 
-			preRightMouseX = x;
-			preRightMouseY = y;
+		preRightMouseX = x;
+		preRightMouseY = y;
 
 	}
 
 	if (LeftMouseButtonDown) {
 
 
-			leftMouseRotationX = 0.02f * (preLeftMouseX - x);
-			leftMouseRotationY = 0.02f * (preLeftMouseY - y);
+		leftMouseRotationX = 0.02f * (preLeftMouseX - x);
+		leftMouseRotationY = 0.02f * (preLeftMouseY - y);
 
-			preLeftMouseX = x;
-			preLeftMouseY = y;
+		preLeftMouseX = x;
+		preLeftMouseY = y;
 
 	}
 
@@ -748,7 +752,10 @@ int main(int argc, char *argv[]) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
 
-	loadObj();
+	initialShaderProgram();
+	loadObj(teapotPath);
+	initialTexture();
+	renderToTexture();
 	vertexBuffer();
 	compileShader();
 
