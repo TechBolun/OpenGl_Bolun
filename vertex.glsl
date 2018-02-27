@@ -11,9 +11,11 @@ uniform mat4 MW_tranform;
 uniform vec3 lightPosition_Bolun;
 
 out vec3 worldPos;
-out vec3 worldNormal;
+out vec3 viewNormal;
 out vec4 Color;
 out vec2 UV;
+
+out vec3 worldNormal;
 
 void main() {
 
@@ -22,8 +24,10 @@ void main() {
 	Color = MV_tranform * vec4(Normal, 1.0);
 
 
-	worldNormal = (MV_tranform * vec4(Normal, 1.0)).xyz;
+	viewNormal = (MV_tranform * vec4(Normal, 1.0)).xyz;
 	worldPos = (MW_tranform * vec4(Position, 1.0)).xyz;
+
+	worldNormal = mat3(transpose(inverse(MW_tranform))) * Normal;
 
 	UV = texCoord;
 

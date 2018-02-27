@@ -110,7 +110,7 @@ TriMesh::Mtl mat;
 
 TriMesh objFile;
 
-Point3f cameraPosition = Point3f(0.0f, -90.0f, 30.0f);
+Point3f cameraPosition = Point3f(0.0f, 0.0f, 30.0f);
 Point3f targetPosition = Point3f(0.0f, 0.0f, 0.0f);
 
 Point3f lightPosition = Point3f(0.0f, 0.0f, 10.0f);
@@ -196,12 +196,14 @@ GLfloat skybox_vextex_buffer_data[] = {
 };
 
 vector<string> skyboxFaces = {
-	"Skybox/cubemap_negx.PNG",
-	"Skybox/cubemap_negy.PNG",
-	"Skybox/cubemap_negz.PNG",
+
 	"Skybox/cubemap_posx.PNG",
+	"Skybox/cubemap_negx.PNG",
 	"Skybox/cubemap_posy.PNG",
+	"Skybox/cubemap_negy.PNG",
 	"Skybox/cubemap_posz.PNG",
+	"Skybox/cubemap_negz.PNG"
+
 };
 
 void fullTransformation();
@@ -222,42 +224,61 @@ void myRender() {
 
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
-	renderedTexture.Bind();
+	//renderedTexture.Bind();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(shaderProgram.GetID());
+	// draw skybox
 
-	BlinnShading();
+	glUseProgram(shaderProgram_Skybox.GetID());
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuse_ID);
+	MVP_ID_Skybox = glGetUniformLocation(shaderProgram_Skybox.GetID(), "MVP_skybox");
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specular_ID);
-
-	glBindVertexArray(VAO);
-	glDrawArrays(GL_TRIANGLES, 0, numIndices);
-	glBindVertexArray(0);
-
-	renderedTexture.Unbind();
-
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glUseProgram(shaderProgram_RenderToTexture.GetID());
-
-	MVP_ID_RenderToTexture = glGetUniformLocation(shaderProgram_RenderToTexture.GetID(), "MVP_RenderToTexturePlane");
-
-	glUniformMatrix4fv(MVP_ID_RenderToTexture, 1, GL_FALSE, &MVP_plane.data[0]);
+	glUniformMatrix4fv(MVP_ID_Skybox, 1, GL_FALSE, &MVP_skybox.data[0]);
 
 	glActiveTexture(GL_TEXTURE0);
-	renderedTexture.BindTexture();
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture_ID);
 
-	glBindVertexArray(plane_VAO);
-	glDrawArrays(GL_TRIANGLES, 0, sizeof(plane_vextex_buffer_data));
-	glBindVertexArray(0);
+	glBindVertexArray(skybox_VAO);
+	glDrawArrays(GL_TRIANGLES, 0, sizeof(skybox_vextex_buffer_data));
+	
+	{
+		//draw teapot
+
+		glUseProgram(shaderProgram.GetID());
+
+		BlinnShading();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuse_ID);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specular_ID);
+
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, numIndices);
+		glBindVertexArray(0);
+	}
+
+
+	//renderedTexture.Unbind();
+
+
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//glUseProgram(shaderProgram_RenderToTexture.GetID());
+
+	//MVP_ID_RenderToTexture = glGetUniformLocation(shaderProgram_RenderToTexture.GetID(), "MVP_RenderToTexturePlane");
+
+	//glUniformMatrix4fv(MVP_ID_RenderToTexture, 1, GL_FALSE, &MVP_plane.data[0]);
+
+	//glActiveTexture(GL_TEXTURE0);
+	//renderedTexture.BindTexture();
+
+	//glBindVertexArray(plane_VAO);
+	//glDrawArrays(GL_TRIANGLES, 0, sizeof(plane_vextex_buffer_data));
+	//glBindVertexArray(0);
 
 	glutSwapBuffers();
 }
@@ -275,7 +296,7 @@ void fullTransformation() {
 
 	view.SetView(cameraPosition, targetPosition, Point3f(0.0f, 1.0f, 0.0f));
 
-	projection.SetPerspective(1, 1, 0.1, 300);
+	projection.SetPerspective(1, 1, 0.1, 1000);
 
 	MVP = projection * view * model;
 }
@@ -293,14 +314,13 @@ void modelToViewTransformation() {
 void skyboxTransformation() {
 
 	model_skybox.SetIdentity();
-	model_skybox.SetScale(Point3f(5, 5, 5));
+	model_skybox.SetScale(Point3f(10, 10, 10));
 
-	MVP_skybox = projection * view * model_skybox;
+	temp = view;
 
-	MVP_ID_Skybox = glGetUniformLocation(shaderProgram_Skybox.GetID(), "MVP_skybox");
+	temp[12] = temp[13] = temp[14] = 0;
 
-	glUniformMatrix4fv(MVP_ID_Skybox, 1, GL_FALSE, &MVP_skybox.data[0]);
-
+	MVP_skybox = projection * temp * model_skybox;
 }
 
 void planeTransformation() {
@@ -467,12 +487,13 @@ void loadSkybox() {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture_ID);
 
 	unsigned width, height;
-	vector<unsigned char> skyboxTexture;
+	
 
 	for (int i = 0; i < skyboxFaces.size(); i++) {
-
+		cout << i << endl;
+		vector<unsigned char> skyboxTexture;
 		convertTextureToData = decode(skyboxTexture, width, height, skyboxFaces[i], LCT_RGBA);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, skyboxTexture.data());
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, skyboxTexture.data());
 
 	}
 
@@ -582,8 +603,13 @@ void myIdle() {
 		if (LeftMouseButtonDown) {
 
 			lightPosition = Matrix3f::MatrixRotationY(leftMouseRotationX) * lightPosition;
-
 		}
+		
+		if (RightMouseButtonDown) {
+
+			lightPosition = Matrix3f::MatrixRotationZ(leftMouseRotationY) * lightPosition;
+		}
+
 	}
 	else if (altButtonDown) {
 
@@ -601,7 +627,6 @@ void myIdle() {
 
 		}
 
-		//MVP_plane = projectionPlane * viewPlane * modelPlane;
 	}
 	else if (LeftMouseButtonDown) {
 
@@ -609,18 +634,18 @@ void myIdle() {
 
 		view *= Matrix4f::MatrixRotationY(leftMouseRotationY);
 
-		//MVP = projection * view * model;
 	}
 	else if (RightMouseButtonDown) {
 
 		view.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale));
 
-		//MVP = projection * view * model;
 	}
 
 	MVP_plane = projection_Plane * view_Plane * model_Plane;
 
 	MVP = projection * view * model;
+
+	//MVP_skybox = projection * view * model_skybox;
 
 	glutPostRedisplay();
 
@@ -764,6 +789,8 @@ int main(int argc, char *argv[]) {
 	initialShaderProgram();
 	loadObj(teapotPath);
 	initialTexture();
+	initialSkybox();
+	loadSkybox();
 	renderToTexture();
 	vertexBuffer();
 	compileShader();

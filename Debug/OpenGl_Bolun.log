@@ -1,5 +1,5 @@
 ﻿  main.cpp
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(278): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(376): warning C4018: '<': signed/unsigned mismatch
-c:\users\bolun\documents\github\opengl_bolun\main.cpp(472): warning C4018: '<': signed/unsigned mismatch
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(299): warning C4305: 'argument': truncation from 'double' to 'float'
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(396): warning C4018: '<': signed/unsigned mismatch
+c:\users\bolun\documents\github\opengl_bolun\main.cpp(492): warning C4018: '<': signed/unsigned mismatch
   OpenGl_Bolun.vcxproj -> C:\Users\Bolun\Documents\GitHub\OpenGl_Bolun\Debug\OpenGl_Bolun.exe
