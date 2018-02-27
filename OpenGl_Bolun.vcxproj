@@ -136,6 +136,8 @@
     <None Include="fragment.glsl" />
     <None Include="renderToTextureFragment.glsl" />
     <None Include="renderToTextureVertex.glsl" />
+    <None Include="SkyboxFragment.glsl" />
+    <None Include="SkyboxVertex.glsl" />
     <None Include="vertex.glsl" />
   </ItemGroup>
   <ItemGroup>

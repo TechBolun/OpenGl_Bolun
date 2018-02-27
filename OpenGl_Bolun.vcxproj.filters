@@ -27,6 +27,8 @@
     <None Include="vertex.glsl" />
     <None Include="renderToTextureFragment.glsl" />
     <None Include="renderToTextureVertex.glsl" />
+    <None Include="SkyboxVertex.glsl" />
+    <None Include="SkyboxFragment.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cyCodeBase\cyBVH.h">

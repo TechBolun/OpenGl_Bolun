@@ -89,9 +89,13 @@ GLuint VBO;	// vertices
 GLuint VNBO;	// vertices  NORMAL
 GLuint UVBO; // UV
 GLuint EAO; // indeice 
+GLuint FBO;
 
 GLuint plane_VAO;
 GLuint plane_VBO;
+
+GLuint skybox_VAO;
+GLuint skybox_VBO;
 
 GLSLProgram shaderProgram;
 GLSLProgram shaderProgramRenderToTexture;
@@ -116,21 +120,71 @@ GLfloat plane_vextex_buffer_data[] = {
 		-15.0f, -15.0f, 0.0f,  //vertex
 		0.0f, 0.0f, 0.0f,   //normal
 		0.0,  0.0, 0.0f,	//UV
+
 		15.0f, -15.0f, 0.0f,
 		0.0f, 0.0f, 0.0f,
 		1.0,  0.0, 0.0f,
+
 		-15.0f,  15.0f, 0.0f,
 		0.0f, 0.0f, 0.0f,
 		0.0,  1.0, 0.0f,
+
 		-15.0f,  15.0f, 0.0f,
 		0.0f, 0.0f, 0.0f,
 		0.0,  1.0, 0.0f,
+
 		15.0f, -15.0f, 0.0f,
 		0.0f, 0.0f, 0.0f,
 		1.0,  0.0, 0.0f,
+
 		15.0f,  15.0f, 0.0f,
 		0.0f, 0.0f, 0.0f,
 		1.0,  1.0, 0.0f,
+};
+
+GLfloat skybox_vextex_buffer_data[] = {
+
+		-20.0f,  20.0f, -20.0f,
+		-20.0f, -20.0f, -20.0f,
+		20.0f, -20.0f, -20.0f,
+		20.0f, -20.0f, -20.0f,
+		20.0f,  20.0f, -20.0f,
+		-20.0f,  20.0f, -20.0f,
+
+		-20.0f, -20.0f,  20.0f,
+		-20.0f, -20.0f, -20.0f,
+		-20.0f,  20.0f, -20.0f,
+		-20.0f,  20.0f, -20.0f,
+		-20.0f,  20.0f,  20.0f,
+		-20.0f, -20.0f,  20.0f,
+
+		20.0f, -20.0f, -20.0f,
+		20.0f, -20.0f,  20.0f,
+		20.0f,  20.0f,  20.0f,
+		20.0f,  20.0f,  20.0f,
+		20.0f,  20.0f, -20.0f,
+		20.0f, -20.0f, -20.0f,
+
+		-20.0f, -20.0f,  20.0f,
+		-20.0f,  20.0f,  20.0f,
+		20.0f,  20.0f,  20.0f,
+		20.0f,  20.0f,  20.0f,
+		20.0f, -20.0f,  20.0f,
+		-20.0f, -20.0f,  20.0f,
+
+		-20.0f,  20.0f, -20.0f,
+		20.0f,  20.0f, -20.0f,
+		20.0f,  20.0f,  20.0f,
+		20.0f,  20.0f,  20.0f,
+		-20.0f,  20.0f,  20.0f,
+		-20.0f,  20.0f, -20.0f,
+
+		-20.0f, -20.0f, -20.0f,
+		-20.0f, -20.0f,  20.0f,
+		20.0f, -20.0f, -20.0f,
+		20.0f, -20.0f, -20.0f,
+		-20.0f, -20.0f,  20.0f,
+		20.0f, -20.0f,  20.0f
 };
 
 
@@ -141,6 +195,7 @@ void loadObj();
 void renderToTexture();
 void indexBuffer();
 void compileShader();
+void initialTexture();
 void renderToTexture();
 void renderToTextureTransformation();
 
@@ -159,6 +214,12 @@ void myRender() {
 	glUseProgram(shaderProgram.GetID());
 
 	BlinnShading();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffuse_ID);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, specular_ID);
 
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, numIndices);
@@ -241,7 +302,7 @@ void initialTexture() {
 
 		convertPNG = decode(texture, width, height, mat.map_Kd.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
 
-		glActiveTexture(GL_TEXTURE0);
+		//glActiveTexture(GL_TEXTURE0);
 		glGenTextures(1, &diffuse_ID);
 		glBindTexture(GL_TEXTURE_2D, diffuse_ID);
 
@@ -262,7 +323,7 @@ void initialTexture() {
 
 		convertPNG = decode(texture, width, height, mat.map_Ks.data, LCT_RGBA); //Converts PNG file from disk to raw pixel data in memory.
 
-		glActiveTexture(GL_TEXTURE1);
+		//glActiveTexture(GL_TEXTURE1);
 		glGenTextures(1, &specular_ID);
 		glBindTexture(GL_TEXTURE_2D, specular_ID);
 
@@ -291,8 +352,8 @@ void loadObj() {
 	shaderProgram.CreateProgram();
 	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
 
-	//shaderProgramRenderToTexture.CreateProgram();
-	//shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
+	shaderProgramRenderToTexture.CreateProgram();
+	shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
 
 	model.SetIdentity();
 
@@ -374,10 +435,24 @@ void loadObj() {
 
 	renderToTexture();
 
-	shaderProgramRenderToTexture.CreateProgram();
-	shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
+	//shaderProgramRenderToTexture.CreateProgram();
+	//shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
 
 	//cout << renderedTexture.IsComplete() << endl;
+}
+
+void initialSkybox() {
+
+	glGenVertexArrays(1, &skybox_VAO);
+	glBindVertexArray(skybox_VAO);
+
+	glGenBuffers(1, &skybox_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, skybox_VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vextex_buffer_data), &skybox_vextex_buffer_data[0], GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Point3f), 0);
+
 }
 
 void renderToTexture() {
@@ -395,17 +470,15 @@ void renderToTexture() {
 	glBindBuffer(GL_ARRAY_BUFFER, plane_VBO);
 	glBufferData(GL_ARRAY_BUFFER, (sizeof(plane_vextex_buffer_data)), &plane_vextex_buffer_data[0], GL_STATIC_DRAW);
 
-	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), 0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), 0);
 	
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)(sizeof(Point3f)));
 	glEnableVertexAttribArray(1);
-
-
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)( 2 * sizeof(Point3f)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)(sizeof(Point3f)));
+	
 	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Point3f), (void*)( 2 * sizeof(Point3f)));
+	
 }
 
 void renderToTextureTransformation() {
@@ -416,6 +489,8 @@ void renderToTextureTransformation() {
 
 	MVP_plane = projectionPlane * viewPlane * modelPlane;
 }
+
+
 
 void indexBuffer() {
 
