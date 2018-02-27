@@ -1,14 +1,13 @@
-#version 330 core
+#version 330
 
 layout (location = 0) in vec3 position;
 
-out vec3 TexCoords;
+out vec3 texCoord;
 
-uniform mat4 projection;
-uniform mat4 view;
+uniform mat4 MVP_skybox;
 
 void main()
 {
-    gl_Position =   projection * view * vec4(position, 1.0);  
-    TexCoords = position;
+    gl_Position =  MVP_skybox * vec4(position, 1.0);  
+    texCoord = position;
 }

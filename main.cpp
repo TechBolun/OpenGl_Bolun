@@ -26,16 +26,20 @@ GLuint numNormalFaces;
 GLuint numVertexNormal;
 GLuint numUVindices;
 
-GLuint fullTransformRenderToTexturePlane;
+GLuint MVP_ID_RenderToTexture;
 
-GLuint fullTransform;
-GLuint modelToViewTransform;
-GLuint modelToWorldTransform;
+GLuint MVP_ID;
+GLuint MV_ID;
+GLuint MW_ID;
 GLuint ambientLightUniformLocation;
 GLuint lightPositionUniformLocation;
 GLuint cameraPositionUniformLocation;
 GLuint diffuseUniformLocation;
 GLuint specularUniformLocation;
+
+GLuint MVP_ID_Skybox;
+GLuint MV_ID_Skybox;
+GLuint MW_ID_Skybox;
 
 GLuint diffuse_ID;
 GLuint specular_ID;
@@ -71,15 +75,19 @@ Matrix4f model;
 Matrix4f view;
 Matrix4f projection;
 
-Matrix4f modelPlane;
-Matrix4f viewPlane;
-Matrix4f projectionPlane;
+Matrix4f model_Plane;
+Matrix4f view_Plane;
+Matrix4f projection_Plane;
+
+Matrix4f model_skybox;
 
 Matrix4f MVP;
 Matrix4f MV;;
 Matrix4f temp;
 
 Matrix4f MVP_plane;
+
+Matrix4f MVP_skybox;
 
 GLuint VAO;
 GLuint VBO;	// vertices
@@ -95,8 +103,8 @@ GLuint skybox_VAO;
 GLuint skybox_VBO;
 
 GLSLProgram shaderProgram;
-GLSLProgram shaderProgramRenderToTexture;
-GLSLProgram shaderProgramSkybox;
+GLSLProgram shaderProgram_RenderToTexture;
+GLSLProgram shaderProgram_Skybox;
 
 TriMesh::Mtl mat;
 
@@ -204,7 +212,6 @@ void indexBuffer();
 void compileShader();
 void initialTexture();
 void renderToTexture();
-void renderToTextureTransformation();
 void initialShaderProgram();
 
 /*
@@ -215,7 +222,7 @@ void myRender() {
 
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
-	//renderedTexture.Bind();
+	renderedTexture.Bind();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -233,26 +240,24 @@ void myRender() {
 	glDrawArrays(GL_TRIANGLES, 0, numIndices);
 	glBindVertexArray(0);
 
-	//renderedTexture.Unbind();
+	renderedTexture.Unbind();
 
 
-	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//glUseProgram(shaderProgramRenderToTexture.GetID());
+	glUseProgram(shaderProgram_RenderToTexture.GetID());
 
-	//fullTransformRenderToTexturePlane = glGetUniformLocation(shaderProgramRenderToTexture.GetID(), "MVP_RenderToTexturePlane");
+	MVP_ID_RenderToTexture = glGetUniformLocation(shaderProgram_RenderToTexture.GetID(), "MVP_RenderToTexturePlane");
 
-	//renderToTextureTransformation();
+	glUniformMatrix4fv(MVP_ID_RenderToTexture, 1, GL_FALSE, &MVP_plane.data[0]);
 
-	//glUniformMatrix4fv(fullTransformRenderToTexturePlane, 1, GL_FALSE, &MVP_plane.data[0]);
+	glActiveTexture(GL_TEXTURE0);
+	renderedTexture.BindTexture();
 
-	//glActiveTexture(GL_TEXTURE0);
-	//renderedTexture.BindTexture();
-
-	//glBindVertexArray(plane_VAO);
-	//glDrawArrays(GL_TRIANGLES, 0, sizeof(plane_vextex_buffer_data));
-	//glBindVertexArray(0);
+	glBindVertexArray(plane_VAO);
+	glDrawArrays(GL_TRIANGLES, 0, sizeof(plane_vextex_buffer_data));
+	glBindVertexArray(0);
 
 	glutSwapBuffers();
 }
@@ -262,8 +267,14 @@ set model to projection transformation matrix4
 */
 void fullTransformation() {
 
+	objFile.ComputeBoundingBox();
+
+	model.SetIdentity();
+
+	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
 
 	view.SetView(cameraPosition, targetPosition, Point3f(0.0f, 1.0f, 0.0f));
+
 	projection.SetPerspective(1, 1, 0.1, 300);
 
 	MVP = projection * view * model;
@@ -279,17 +290,39 @@ void modelToViewTransformation() {
 	MV.Transpose();
 }
 
+void skyboxTransformation() {
+
+	model_skybox.SetIdentity();
+	model_skybox.SetScale(Point3f(5, 5, 5));
+
+	MVP_skybox = projection * view * model_skybox;
+
+	MVP_ID_Skybox = glGetUniformLocation(shaderProgram_Skybox.GetID(), "MVP_skybox");
+
+	glUniformMatrix4fv(MVP_ID_Skybox, 1, GL_FALSE, &MVP_skybox.data[0]);
+
+}
+
+void planeTransformation() {
+
+	model_Plane.SetIdentity();
+	view_Plane = view;
+	projection_Plane = projection;
+
+	MVP_plane = projection_Plane * view_Plane * model_Plane;
+
+}
+
 void BlinnShading() {
 
-	glUniformMatrix4fv(fullTransform, 1, GL_FALSE, &MVP.data[0]);
-	glUniformMatrix4fv(modelToViewTransform, 1, GL_FALSE, &MV.data[0]);
-	glUniformMatrix4fv(modelToWorldTransform, 1, GL_FALSE, &model.data[0]);
+	glUniformMatrix4fv(MVP_ID, 1, GL_FALSE, &MVP.data[0]);
+	glUniformMatrix4fv(MV_ID, 1, GL_FALSE, &MV.data[0]);
+	glUniformMatrix4fv(MW_ID, 1, GL_FALSE, &model.data[0]);
 
 	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
+
 	glUniform3fv(cameraPositionUniformLocation, 1, &cameraPosition[0]);
 	glUniform3fv(ambientLightUniformLocation, 1, &ambientLight[0]);
-
-	glUniform3fv(lightPositionUniformLocation, 1, &lightPosition[0]);
 
 	glUniform1i(diffuseUniformLocation, 0);
 	glUniform1i(specularUniformLocation, 1);
@@ -301,11 +334,11 @@ void initialShaderProgram() {
 	shaderProgram.CreateProgram();
 	shaderProgram.BuildFiles("vertex.glsl", "fragment.glsl");
 
-	shaderProgramRenderToTexture.CreateProgram();
-	shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
+	shaderProgram_RenderToTexture.CreateProgram();
+	shaderProgram_RenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
 
-	shaderProgramSkybox.CreateProgram();
-	shaderProgramSkybox.BuildFiles("SkyboxVertex.glsl", "SkyboxFragment.glsl");
+	shaderProgram_Skybox.CreateProgram();
+	shaderProgram_Skybox.BuildFiles("SkyboxVertex.glsl", "SkyboxFragment.glsl");
 }
 
 /*
@@ -320,12 +353,6 @@ void loadObj(string name) {
 	if (!loadSuccess) {
 		cout << "load file ERROR" << endl;
 	}
-
-	model.SetIdentity();
-
-	objFile.ComputeBoundingBox();
-
-	model.AddTrans(-(objFile.GetBoundMax() + objFile.GetBoundMin()) / 2);
 
 	numVertices = objFile.NV(); // get vertices
 
@@ -372,19 +399,11 @@ void loadObj(string name) {
 		uv[3 * i + 2] = Point3f(objFile.VT(texFace.v[2]));
 
 	}
-
-
-
-	//shaderProgramRenderToTexture.CreateProgram();
-	//shaderProgramRenderToTexture.BuildFiles("renderToTextureVertex.glsl", "renderToTextureFragment.glsl");
-
-	//cout << renderedTexture.IsComplete() << endl;
 }
 
 void initialTexture() {
 
 	mat = objFile.M(0); //get first material
-
 
 	{
 
@@ -491,17 +510,6 @@ void renderToTexture() {
 
 }
 
-void renderToTextureTransformation() {
-
-	projectionPlane = projection;
-	viewPlane = view;
-	modelPlane.SetIdentity();
-
-	MVP_plane = projectionPlane * viewPlane * modelPlane;
-}
-
-
-
 void indexBuffer() {
 
 	glGenBuffers(1, &EAO);
@@ -552,9 +560,9 @@ compile shaders
 void compileShader() {
 
 
-	fullTransform = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
-	modelToViewTransform = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
-	modelToWorldTransform = glGetUniformLocation(shaderProgram.GetID(), "MW_tranform");
+	MVP_ID = glGetUniformLocation(shaderProgram.GetID(), "MVP_tranform");
+	MV_ID = glGetUniformLocation(shaderProgram.GetID(), "MV_tranform");
+	MW_ID = glGetUniformLocation(shaderProgram.GetID(), "MW_tranform");
 
 	lightPositionUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "lightPosition_Bolun");
 
@@ -564,7 +572,7 @@ void compileShader() {
 	diffuseUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "diffuse_Bolun");
 	specularUniformLocation = glGetUniformLocation(shaderProgram.GetID(), "specular_Bolun");
 
-	assert(fullTransform != 0xFFFFFFFF);
+	assert(MVP_ID != 0xFFFFFFFF);
 }
 
 void myIdle() {
@@ -581,15 +589,15 @@ void myIdle() {
 
 		if (LeftMouseButtonDown) {
 
-			viewPlane *= Matrix4f::MatrixRotationX(leftMouseRotationX);
+			view_Plane *= Matrix4f::MatrixRotationX(leftMouseRotationX);
 
-			viewPlane *= Matrix4f::MatrixRotationY(leftMouseRotationY);
+			view_Plane *= Matrix4f::MatrixRotationY(leftMouseRotationY);
 
-
+			cout << 1 << endl;
 		}
 		else if (RightMouseButtonDown) {
 
-			viewPlane.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale));
+			view_Plane.AddTrans(Point3f(0.0f, 0.0f, rightMouseScale));
 
 		}
 
@@ -610,6 +618,7 @@ void myIdle() {
 		//MVP = projection * view * model;
 	}
 
+	MVP_plane = projection_Plane * view_Plane * model_Plane;
 
 	MVP = projection * view * model;
 
@@ -646,7 +655,7 @@ void functionKeyDown(int key, int x, int y) {
 		controlButtonDown = true;
 		break;
 
-	case 0x12:
+	case 116:
 		altButtonDown = true;
 		break;
 
@@ -668,7 +677,7 @@ void functionKeyUp(int key, int x, int y) {
 		controlButtonDown = false;
 		break;
 
-	case 0x12:
+	case 116:
 		altButtonDown = false;
 		break;
 
@@ -761,6 +770,8 @@ int main(int argc, char *argv[]) {
 
 	fullTransformation();
 	modelToViewTransformation();
+	planeTransformation();
+	skyboxTransformation();
 
 	glutDisplayFunc(myRender);
 	glutIdleFunc(myIdle);
