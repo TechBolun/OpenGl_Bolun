@@ -46,7 +46,7 @@ void main() {
 	//fragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	viewDir = normalize(worldPos - cameraPosition_Bolun);
-	vec3 reflectDir = reflect(viewDir, normalize(worldNormal));
+	vec3 reflectDir = reflect(viewDir, normalize(viewNormal));
 
 	fragColor = texture(skybox, reflectDir);
 
