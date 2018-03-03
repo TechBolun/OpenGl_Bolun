@@ -26,9 +26,9 @@ void main() {
 	
 	vec3 worldLightDir = normalize(lightPosition_Bolun - worldPos); //works
 	vec3 viewDir = normalize(cameraPosition_Bolun - worldPos); // works
-	vec3 half = normalize(viewDir + worldLightDir); //works
+	vec3 half_VW = normalize(viewDir + worldLightDir); //works
 
-	float brightness = clamp(dot(half, normalize(viewNormal)), 0, 1);
+	float brightness = clamp(dot(half_VW, normalize(viewNormal)), 0, 1);
 	float cosThetaLN = clamp(dot(worldLightDir, normalize(viewNormal)), 0, 1);
 
 	brightness = cosThetaLN != 0.0 ? brightness : 0.0;
@@ -48,6 +48,6 @@ void main() {
 	viewDir = normalize(worldPos - cameraPosition_Bolun);
 	vec3 reflectDir = reflect(viewDir, normalize(viewNormal));
 
-	fragColor = texture(skybox, reflectDir);
+	//fragColor = texture(skybox, reflectDir);
 
 }
